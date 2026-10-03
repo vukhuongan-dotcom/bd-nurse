@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NURSE | Hệ Thống Giám Sát Chuyên Môn Điều Dưỡng BVBD</title>
+  <link rel="icon" href="/static/brand/favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" type="image/svg+xml" href="/static/brand/nurse-icon.svg" />
+  <link rel="apple-touch-icon" href="/static/brand/icon-180.png" />
+  <link rel="stylesheet" href="/static/css/tokens.css" />
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-wrapper">
+        <img id="app-logo-wordmark" class="brand-wordmark-logo" src="/static/brand/nurse-wordmark-light.svg" alt="NURSE – Giám sát chất lượng chuyên môn điều dưỡng" height="30" />
+        <div class="brand-divider"></div>
+        <div class="brand-text-col">
+          <div class="brand-title">
+            <span class="brand-subtitle-bold">Giám sát chất lượng / chuyên môn điều dưỡng</span>
+            <span class="brand-badge">BK-GS-ĐD.01</span>
+          </div>
+          <div class="brand-subtext">Bệnh viện Bình Dân · Lần BH: 02 (2026)</div>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="filter-pill">
+          <span class="filter-label">Năm:</span>
+          <select id="global-year-select" class="select-control">
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+
+        <div class="filter-pill">
+          <span class="filter-label">Kỳ giám sát:</span>
+          <select id="global-quarter-select" class="select-control">
+            <option value="4">Quý IV</option>
+            <option value="3">Quý III</option>
+            <option value="2">Quý II</option>
+            <option value="1">Quý I</option>
+            <option value="all">Toàn bộ năm</option>
+          </select>
+        </div>
+
+        <button type="button" id="btn-theme-toggle" class="btn-icon" title="Chuyển chế độ Sáng/Tối">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="app-nav">
+    <div class="nav-container">
+      <div class="nav-tab active" data-tab="tab-inspection">
+        <span>📝</span>
+        <span>Bảng kiểm Thực địa (63 Tiêu chuẩn con)</span>
+      </div>
+      <div class="nav-tab" data-tab="tab-dashboard">
+        <span>📊</span>
+        <span>Dashboard Quản trị & Thống kê</span>
+      </div>
+      <div class="nav-tab" data-tab="tab-archive">
+        <span>📁</span>
+        <span>Lịch sử & Xuất Báo cáo</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="app-main">
+
+    <!-- TAB 1: NHẬP LIỆU THỰC ĐỊA -->
+    <div id="tab-inspection" class="tab-pane active">
+      
+      <!-- Thông tin chung đợt kiểm tra (Bố cục chuẩn hóa chống vỡ hàng) -->
+      <div class="card">
+        <div class="card-title">
+          <span>THÔNG TIN ĐỢT GIÁM SÁT CHUYÊN MÔN</span>
+          <button type="button" class="btn-secondary" onclick="InspectionForm.resetForm()" style="font-size:12px; padding:6px 12px; min-height:34px;">
+            🔄 Làm mới form
+          </button>
+        </div>
+
+        <div class="info-form-grid">
+          <!-- Hàng 1: Khoa (Rộng) & Loại đợt -->
+          <div class="form-group">
+            <label class="form-label" for="inspect-dept-select">
+              <span>Khoa được giám sát</span>
+              <span class="form-label-required">*</span>
+            </label>
+            <select id="inspect-dept-select" class="form-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inspect-type">
+              <span>Loại đợt kiểm tra</span>
+            </label>
+            <select id="inspect-type" class="form-select">
+              <option value="DINH_KY">Định kỳ hàng quý</option>
+              <option value="DOT_XUAT">Đột xuất</option>
+              <option value="TAI_GIAM_SAT">Tái giám sát (sau vi phạm/cải tiến)</option>
+            </select>
+          </div>
+
+          <!-- Hàng 2: Thời gian & ĐD Trưởng khoa -->
+          <div class="row-time-nurse">
+            <div class="form-group">
+              <label class="form-label" for="inspect-time">
+                <span>Thời gian kiểm tra</span>
+                <span class="form-label-required">*</span>
+                <span class="form-label-desc">(HH:MM dd.mm.yyyy)</span>
+              </label>
+              <input type="text" id="inspect-time" class="form-input" placeholder="14:30 15.10.2026" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inspect-head-nurse">
+                <span>Điều dưỡng Trưởng khoa</span>
+                <span class="form-label-required">*</span>
+              </label>
+              <input type="text" id="inspect-head-nurse" class="form-input" placeholder="Họ và tên ĐD Trưởng khoa..." />
+            </div>
+          </div>
+
+          <!-- Hàng 3: Thành viên đoàn giám sát -->
+          <div class="row-inspectors form-group">
+            <label class="form-label" for="inspect-inspectors">
+              <span>Thành viên đoàn giám sát</span>
+              <span class="form-label-required">*</span>
+              <span class="form-label-desc">(Nhập mỗi chuyên gia/giám sát viên trên một dòng riêng biệt)</span>
+            </label>
+            <textarea id="inspect-inspectors" class="form-textarea" rows="2" placeholder="ThS. ĐD. Trần Thị B&#10;CNĐD. Lê Văn C"></textarea>
+          </div>
+        </div>
+
+        <div id="department-preset-notice" class="preset-bar" style="display:none;">
+          <span>ℹ️</span>
+          <span id="preset-notice-text">Khoa đặc thù: Đã áp dụng preset gợi ý tự động các mục Không áp dụng.</span>
+        </div>
+      </div>
+
+      <!-- Khung Cảnh báo Vi phạm An toàn NB Nghiêm trọng -->
+      <div class="card" style="border-left: 5px solid var(--status-danger);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="display:flex; align-items:center; gap:12px; font-weight:800; color:var(--status-danger); cursor:pointer;">
+            <input type="checkbox" id="serious-violation-cb" style="width:20px; height:20px; accent-color:var(--status-danger);" />
+            <span>⚠️ KÍCH HOẠT CỔNG VI PHẠM AN TOÀN NGƯỜI BỆNH NGHIÊM TRỌNG (Cưỡng chế xếp loại KHÔNG ĐẠT)</span>
+          </label>
+        </div>
+
+        <div id="serious-violation-details" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-strong);">
+          <div class="info-form-grid">
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label" for="serious-violation-type">Loại vi phạm quy chế an toàn người bệnh *</label>
+              <select id="serious-violation-type" class="form-select">
+                <option value="Nhầm lẫn người bệnh">Nhầm lẫn người bệnh</option>
+                <option value="Nhầm nhóm máu / Quy trình an toàn truyền máu">Nhầm nhóm máu / Quy trình an toàn truyền máu</option>
+                <option value="Nhầm thuốc / Tai biến sử dụng thuốc">Nhầm thuốc / Tai biến sử dụng thuốc</option>
+                <option value="Dư hoặc thiếu thuốc, VTYT nghiêm trọng">Dư hoặc thiếu thuốc, VTYT nghiêm trọng</option>
+                <option value="Báo cáo sai sự thật / Gian lận hồ sơ">Báo cáo sai sự thật / Gian lận hồ sơ</option>
+              </select>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label" for="serious-violation-desc">Mô tả cụ thể sự việc vi phạm (Bắt buộc lập biên bản sự cố gửi BCN Khoa & Phòng Điều dưỡng) *</label>
+              <textarea id="serious-violation-desc" class="form-textarea" placeholder="Ghi nhận cụ thể thời điểm, buồng bệnh, nhân sự liên quan và hậu quả..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng kiểm 63 tiêu chuẩn con (5 Chặng) -->
+      <div id="criteria-stages-container">
+        <!-- Render tự động bởi inspection.js -->
+      </div>
+
+      <!-- Kế hoạch hành động & Khắc phục -->
+      <div class="card">
+        <div class="card-title">KẾ HOẠCH HÀNH ĐỘNG & KHẮC PHỤC SAI SÓT TẠI KHOA</div>
+        <div class="info-form-grid">
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label class="form-label" for="corrective-deficiencies">1. Tồn tại / Sai sót ghi nhận tại khoa (Tự động tổng hợp từ các tiêu chuẩn con Không đạt)</label>
+            <textarea id="corrective-deficiencies" class="form-textarea" rows="3" readonly style="background:var(--bg-muted);"></textarea>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label class="form-label" for="corrective-measures">2. Biện pháp hành động / Khắc phục cụ thể *</label>
+            <textarea id="corrective-measures" class="form-textarea" rows="3" placeholder="Nhập các giải pháp cải tiến quy trình, tập huấn lại nhân sự..."></textarea>
+          </div>
+
+          <div class="row-time-nurse">
+            <div class="form-group">
+              <label class="form-label" for="corrective-person">Người chịu trách nhiệm chính</label>
+              <input type="text" id="corrective-person" class="form-input" placeholder="Họ tên người phụ trách..." />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="corrective-deadline">Thời hạn hoàn thành (dd.mm.yyyy)</label>
+              <input type="text" id="corrective-deadline" class="form-input" placeholder="Ví dụ: 30.10.2026" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: DASHBOARD QUẢN TRỊ -->
+    <div id="tab-dashboard" class="tab-pane">
+      
+      <!-- KPI Cards -->
+      <div class="dashboard-kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-title">Tiến độ Giám sát Định kỳ</span>
+          <div id="kpi-progress" class="kpi-value">0 / 27 Khoa</div>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-title">Tỷ lệ Tuân thủ Trung bình</span>
+          <div id="kpi-avg-rate" class="kpi-value" style="color:var(--brand-primary);">0.0%</div>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-title">Phân bố Xếp loại Toàn viện</span>
+          <div id="kpi-rating-dist" class="kpi-value" style="font-size:15px; font-weight:700; line-height:1.4;">--</div>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="dashboard-charts-grid">
+        <div class="card">
+          <div class="card-title">BẢNG XẾP HẠNG TỶ LỆ TUÂN THỦ 27 KHOA (RANKING)</div>
+          <div style="height:480px; position:relative;">
+            <canvas id="chart-ranking"></canvas>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          <div class="card">
+            <div class="card-title">PHÂN BỐ XẾP LOẠI TOÀN VIỆN</div>
+            <div style="height:220px; position:relative;">
+              <canvas id="chart-rating-dist"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">TOP 5 TIÊU CHUẨN CON CÓ TỶ LỆ VI PHẠM CAO NHẤT</div>
+            <div style="height:220px; position:relative;">
+              <canvas id="chart-top-defects"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overdue Actions Table -->
+      <div class="card">
+        <div class="card-title">DANH SÁCH KHOA CẦN CẢI TIẾN (+48H) / TÁI GIÁM SÁT (+3 ĐẾN 5 NGÀY)</div>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Khoa</th>
+                <th>Xếp loại</th>
+                <th>Thời điểm kiểm tra</th>
+                <th>Hạn hành động</th>
+                <th>Loại yêu cầu</th>
+              </tr>
+            </thead>
+            <tbody id="overdue-table-body">
+              <tr><td colspan="5" style="text-align:center; padding:16px;">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 3: LỊCH SỬ & BÁO CÁO -->
+    <div id="tab-archive" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>DANH SÁCH TỔNG HỢP CÁC ĐỢT GIÁM SÁT</span>
+          <button type="button" class="btn-secondary" onclick="App.triggerBackup()" style="font-size:12px; padding:6px 14px;">
+            💾 Sao lưu Snapshot Database vào Drive
+          </button>
+        </div>
+
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Khoa giám sát</th>
+                <th>Kỳ kiểm tra</th>
+                <th>Thời gian</th>
+                <th>Điểm số & Tỷ lệ</th>
+                <th>Xếp loại</th>
+                <th>Trạng thái</th>
+                <th>Tác vụ xuất tệp</th>
+              </tr>
+            </thead>
+            <tbody id="archive-table-body">
+              <tr><td colspan="8" style="text-align:center; padding:24px;">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Sticky Bottom Score Bar -->
+  <aside class="sticky-score-bar">
+    <div class="score-bar-container">
+      <div class="score-summary-wrap">
+        <div class="score-metric">
+          <span class="metric-label">Tổng điểm đạt</span>
+          <span id="score-bar-achieved" class="metric-value">0 / 100đ</span>
+        </div>
+
+        <div class="score-metric">
+          <span class="metric-label">Tỷ lệ tuân thủ</span>
+          <span id="score-bar-rate" class="metric-value" style="color:var(--brand-primary);">0.0%</span>
+        </div>
+
+        <div>
+          <span id="score-bar-rating" class="rating-badge dat">ĐẠT</span>
+        </div>
+
+        <div class="score-metric" style="display:flex; flex-direction:column; justify-content:center;">
+          <span class="metric-label">Chi tiết 63 tiêu chuẩn con</span>
+          <span id="score-bar-subcounts" style="font-size:12px; font-weight:700; color:var(--text-secondary); white-space:nowrap;">63 Đạt · 0 K.Đạt · 0 Không áp dụng</span>
+        </div>
+      </div>
+
+      <div class="score-bar-actions">
+        <button type="button" id="btn-save-draft" class="btn-secondary">💾 Lưu nháp</button>
+        <button type="button" id="btn-complete-inspection" class="btn-primary">✅ Hoàn tất kiểm tra</button>
+        <button type="button" id="btn-quick-export-docx" class="btn-secondary" style="display:none; color:var(--brand-primary);">📄 Xuất Word (.docx)</button>
+        <button type="button" id="btn-quick-export-pdf" class="btn-secondary" style="display:none; color:var(--status-danger);">📕 Xuất PDF (.pdf)</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/chart.umd.min.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/inspection.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

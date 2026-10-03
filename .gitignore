@@ -1,0 +1,43 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Database & Backups
+*.db
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+data/backup/*.db
+data/backup/*.sqlite3
+
+# Export Artifacts (Preserve directory structure via .gitkeep)
+exports/docx/*
+exports/pdf/*
+!exports/docx/.gitkeep
+!exports/pdf/.gitkeep
+
+# Preserve Form Template
+!templates/BK-GS-DD.01_template.docx
+
+# Logs & Temp
+*.log
+*.swp
+*.swo
+*~
