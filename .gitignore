@@ -41,3 +41,7 @@ exports/pdf/*
 *.swp
 *.swo
 *~
+
+# Local Backups & Scratch
+scratch/
+app/frontend_backup_20261003/

@@ -1,203 +1,429 @@
 /**
- * Dashboard & Analytics Controller for BD-NURSE (Chart.js 4.4)
+ * Dashboard & Archive Controller for BD-NURSE (Indigo Redesign)
+ * HTML-native Responsive Visualizations (Zero Canvas Overflow)
+ * Phê duyệt bởi BSCKII. Vũ Khương An
  */
 
 const Dashboard = {
-  rankingChart: null,
-  ratingChart: null,
-  defectsChart: null,
+  dashboardData: null,
+  currentBlockFilter: 'all',
+  archiveData: [],
 
+  // ==================== 1. PHÂN HỆ THỐNG KÊ (DASHBOARD) ====================
   async loadStats() {
     try {
       let url = `/api/stats/dashboard?year=${App.currentYear}`;
       if (App.currentQuarter) url += `&quarter=${App.currentQuarter}`;
 
       const res = await fetch(url);
+      if (!res.ok) throw new Error('Không thể nạp dữ liệu thống kê');
       const data = await res.json();
+      this.dashboardData = data;
 
       this.renderKPIs(data);
-      this.renderCharts(data);
-      this.renderOverdueTable(data.overdue_actions || []);
+      this.renderRankingBars(data.ranking || []);
+      this.renderStackedRatingBar(data.rating_distribution || {});
+      this.renderTopDefects(data.top_defects || []);
     } catch (e) {
-      App.showToast(`Lỗi tải dữ liệu Dashboard: ${e.message}`, 'error');
+      App.showToast(`Lỗi nạp thống kê: ${e.message}`, 'error');
     }
   },
 
   renderKPIs(data) {
-    const kpiProgress = document.getElementById('kpi-progress');
-    const kpiAvgRate = document.getElementById('kpi-avg-rate');
-    const kpiRatingDist = document.getElementById('kpi-rating-dist');
+    const fractionEl = document.getElementById('kpi-progress-fraction');
+    const percentEl = document.getElementById('kpi-progress-percent');
+    const barEl = document.getElementById('kpi-progress-bar');
+    const avgRateEl = document.getElementById('kpi-avg-rate');
+    const avgSubEl = document.getElementById('kpi-avg-subtext');
+    const nonCompliantEl = document.getElementById('kpi-non-compliant-count');
+    const nonCompliantSub = document.getElementById('kpi-non-compliant-sub');
+    const overdueEl = document.getElementById('kpi-overdue-count');
 
-    if (kpiProgress) {
-      kpiProgress.innerHTML = `
-        ${data.inspected_departments} / ${data.total_departments} Khoa
-        <small style="font-size:14px; font-weight:600; color:var(--brand-primary);">(${data.progress_rate}%)</small>
-      `;
+    const inspectedDepts = data.inspected_departments || 0;
+    const totalDepts = data.total_departments || 27;
+    const progRate = (data.progress_rate != null) ? data.progress_rate : ((inspectedDepts / totalDepts) * 100);
+
+    if (fractionEl) fractionEl.textContent = `${inspectedDepts}/${totalDepts}`;
+    if (percentEl) percentEl.textContent = `(${progRate.toFixed(1).replace('.', ',')}%)`;
+    if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, progRate))}%`;
+
+    const avgRate = data.average_compliance_rate || 0;
+    if (avgRateEl) avgRateEl.textContent = `${avgRate.toFixed(1).replace('.', ',')}%`;
+    if (avgSubEl) avgSubEl.textContent = `Tính trên ${inspectedDepts} khoa đã hoàn tất giám sát`;
+
+    const dist = data.rating_distribution || {};
+    const nonCompliantCount = (dist.can_cai_tien || 0) + (dist.khong_dat || 0);
+    if (nonCompliantEl) nonCompliantEl.textContent = nonCompliantCount;
+    if (nonCompliantSub) nonCompliantSub.textContent = nonCompliantCount > 0 ? 'khoa cần tái giám sát' : 'khoa cần lưu ý';
+
+    const overdueCount = (data.overdue_actions || []).length;
+    if (overdueEl) overdueEl.textContent = overdueCount;
+  },
+
+  filterBlock(blockName) {
+    this.currentBlockFilter = blockName;
+    document.querySelectorAll('.block-filter-chips .btn-stage').forEach(b => {
+      const isTarget = b.id === `btn-block-${blockName === 'all' ? 'all' : (blockName === 'Ngoại' ? 'ngoai' : (blockName === 'Nội' ? 'noi' : 'khac'))}`;
+      b.classList.toggle('active', isTarget);
+    });
+
+    if (this.dashboardData) {
+      this.renderRankingBars(this.dashboardData.ranking || []);
+    }
+  },
+
+  async renderRankingBars(ranking) {
+    const container = document.getElementById('department-ranking-container');
+    if (!container) return;
+
+    if (!App.departments || App.departments.length === 0) {
+      try {
+        const res = await fetch('/api/departments');
+        App.departments = await res.json();
+      } catch (e) {
+        container.innerHTML = '<div style="padding:16px; color:var(--ink-2); text-align:center;">Đang tải danh sách khoa...</div>';
+        return;
+      }
     }
 
-    if (kpiAvgRate) {
-      kpiAvgRate.textContent = `${data.average_compliance_rate}%`;
+    // Lọc theo khối nếu có
+    let depts = App.departments || [];
+    if (this.currentBlockFilter && this.currentBlockFilter !== 'all') {
+      depts = depts.filter(d => (d.block || '').includes(this.currentBlockFilter));
     }
 
-    if (kpiRatingDist) {
-      const dist = data.rating_distribution || {};
-      kpiRatingDist.innerHTML = `
-        <span style="color:var(--status-success);">${dist.dat || 0} Đạt</span> •
-        <span style="color:var(--status-info);">${dist.tot || 0} Tốt</span> •
-        <span style="color:var(--status-warning);">${dist.can_cai_tien || 0} Cải tiến</span> •
-        <span style="color:var(--status-danger);">${dist.khong_dat || 0} K.Đạt</span>
-      `;
-    }
-  },
+    // Mapping đợt kiểm tra theo department_id
+    const rankingMap = new Map();
+    ranking.forEach(r => rankingMap.set(r.department_id, r));
 
-  renderCharts(data) {
-    this.renderRankingChart(data.ranking || []);
-    this.renderRatingChart(data.rating_distribution || {});
-    this.renderDefectsChart(data.top_defects || []);
-  },
-
-  renderRankingChart(ranking) {
-    const ctx = document.getElementById('chart-ranking');
-    if (!ctx) return;
-
-    if (this.rankingChart) this.rankingChart.destroy();
-
-    const labels = ranking.map(r => r.dept_name);
-    const scores = ranking.map(r => r.compliance_rate);
-    const colors = ranking.map(r => {
-      if (r.rating_code === 'dat') return '#16a34a';
-      if (r.rating_code === 'tot') return '#2563eb';
-      if (r.rating_code === 'can_cai_tien') return '#d97706';
-      return '#dc2626';
+    // Sắp xếp: khoa đã kiểm tra (tỷ lệ giảm dần) trước, khoa chưa kiểm tra sau
+    const sortedDepts = [...depts].sort((a, b) => {
+      const recA = rankingMap.get(a.id);
+      const recB = rankingMap.get(b.id);
+      if (recA && !recB) return -1;
+      if (!recA && recB) return 1;
+      if (recA && recB) return (recB.compliance_rate || 0) - (recA.compliance_rate || 0);
+      return a.id - b.id;
     });
 
-    this.rankingChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Tỷ lệ tuân thủ (%)',
-          data: scores,
-          backgroundColor: colors,
-          borderRadius: 4
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (context) => ` Tuân thủ: ${context.parsed.x}%`
-            }
-          }
-        },
-        scales: {
-          x: {
-            min: 0,
-            max: 100,
-            grid: { color: 'rgba(150, 150, 150, 0.15)' }
-          },
-          y: {
-            grid: { display: false }
-          }
-        }
-      }
-    });
-  },
-
-  renderRatingChart(dist) {
-    const ctx = document.getElementById('chart-rating-dist');
-    if (!ctx) return;
-
-    if (this.ratingChart) this.ratingChart.destroy();
-
-    this.ratingChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Đạt (≥90%)', 'Tốt (80-89%)', 'Cần cải tiến (70-79%)', 'KHÔNG ĐẠT (<70%)'],
-        datasets: [{
-          data: [dist.dat || 0, dist.tot || 0, dist.can_cai_tien || 0, dist.khong_dat || 0],
-          backgroundColor: ['#16a34a', '#2563eb', '#d97706', '#dc2626']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
-      }
-    });
-  },
-
-  renderDefectsChart(topDefects) {
-    const ctx = document.getElementById('chart-top-defects');
-    if (!ctx) return;
-
-    if (this.defectsChart) this.defectsChart.destroy();
-
-    const labels = topDefects.map(d => `Mục ${d.muc_stt}.${d.thu_tu}: ${d.muc_ten.substring(0, 25)}...`);
-    const rates = topDefects.map(d => d.failed_rate || 0);
-
-    this.defectsChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Tỷ lệ vi phạm (%)',
-          data: rates,
-          backgroundColor: '#ef4444',
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: {
-            min: 0,
-            max: 100,
-            grid: { color: 'rgba(150, 150, 150, 0.15)' }
-          },
-          x: {
-            grid: { display: false }
-          }
-        }
-      }
-    });
-  },
-
-  renderOverdueTable(actions) {
-    const tableBody = document.getElementById('overdue-table-body');
-    if (!tableBody) return;
-
-    if (actions.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--text-muted);">Không có khoa nào quá hạn hoặc cần hành động khẩn.</td></tr>';
+    if (sortedDepts.length === 0) {
+      container.innerHTML = '<div style="padding:24px; text-align:center; color:var(--ink-2); font-size:var(--text-sm);">Không có khoa nào thuộc khối này.</div>';
       return;
     }
 
     let html = '';
-    actions.forEach(a => {
-      const isDanger = a.rating_code === 'khong_dat';
-      const deadline = isDanger ? a.han_tai_giam_sat : a.han_khac_phuc;
-      const typeText = isDanger ? 'Tái giám sát (+3-5 ngày)' : 'Khắc phục (+48h)';
+    sortedDepts.forEach((dept) => {
+      const record = rankingMap.get(dept.id);
+      if (record) {
+        let barColor = '#15803D'; // Đạt
+        if (record.rating_code === 'tot') barColor = '#0F766E';
+        if (record.rating_code === 'cai_tien') barColor = '#B45309';
+        if (record.rating_code === 'khong_dat') barColor = '#B91C1C';
+        const rateFormatted = (record.compliance_rate || 0).toFixed(1).replace('.', ',');
+
+        html += `
+          <div class="rank-row" onclick="InspectionForm.loadExistingInspection(${record.id})" style="cursor:pointer;" title="Bấm để xem đợt kiểm tra #${record.id}">
+            <span class="rank-dept-name" title="${dept.name} (${dept.block || ''})">${dept.name}</span>
+            <div class="rank-bar-track">
+              <div class="rank-bar-fill" style="width: ${Math.max(14, record.compliance_rate || 0)}%; background-color: ${barColor};">
+                <span class="tabular-nums">${rateFormatted}%</span>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="rank-row">
+            <span class="rank-dept-name" title="${dept.name} (${dept.block || ''})">${dept.name}</span>
+            <div class="rank-bar-track">
+              <span class="rank-empty-text">Chưa kiểm tra</span>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    container.innerHTML = html;
+  },
+
+  renderStackedRatingBar(dist) {
+    const barEl = document.getElementById('rating-distribution-stacked-bar');
+    const legendEl = document.getElementById('rating-distribution-legend');
+    if (!barEl) return;
+
+    const datCount = dist.dat || 0;
+    const totCount = dist.tot || 0;
+    const caiTienCount = dist.can_cai_tien || 0;
+    const khongDatCount = dist.khong_dat || 0;
+    const total = datCount + totCount + caiTienCount + khongDatCount;
+
+    if (total === 0) {
+      barEl.innerHTML = '<div style="width:100%; display:flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:12px;">Chưa có dữ liệu kiểm tra trong kỳ này</div>';
+      if (legendEl) legendEl.innerHTML = '';
+      return;
+    }
+
+    const datPct = (datCount / total) * 100;
+    const totPct = (totCount / total) * 100;
+    const caiTienPct = (caiTienCount / total) * 100;
+    const khongDatPct = (khongDatCount / total) * 100;
+
+    barEl.innerHTML = `
+      ${datPct > 0 ? `<div class="stacked-seg" style="width:${datPct}%; background-color:#15803D;" title="Đạt: ${datCount} khoa (${datPct.toFixed(1).replace('.', ',')}%)">${datPct >= 8 ? datCount : ''}</div>` : ''}
+      ${totPct > 0 ? `<div class="stacked-seg" style="width:${totPct}%; background-color:#0F766E;" title="Tốt: ${totCount} khoa (${totPct.toFixed(1).replace('.', ',')}%)">${totPct >= 8 ? totCount : ''}</div>` : ''}
+      ${caiTienPct > 0 ? `<div class="stacked-seg" style="width:${caiTienPct}%; background-color:#B45309;" title="Cần cải tiến: ${caiTienCount} khoa (${caiTienPct.toFixed(1).replace('.', ',')}%)">${caiTienPct >= 8 ? caiTienCount : ''}</div>` : ''}
+      ${khongDatPct > 0 ? `<div class="stacked-seg" style="width:${khongDatPct}%; background-color:#B91C1C;" title="Không đạt: ${khongDatCount} khoa (${khongDatPct.toFixed(1).replace('.', ',')}%)">${khongDatPct >= 8 ? khongDatCount : ''}</div>` : ''}
+    `;
+
+    if (legendEl) {
+      legendEl.innerHTML = `
+        <div class="legend-item"><span class="legend-color-dot" style="background-color:#15803D;"></span><span>Đạt: <strong>${datCount}</strong> (${datPct.toFixed(1).replace('.', ',')}%)</span></div>
+        <div class="legend-item"><span class="legend-color-dot" style="background-color:#0F766E;"></span><span>Tốt: <strong>${totCount}</strong> (${totPct.toFixed(1).replace('.', ',')}%)</span></div>
+        <div class="legend-item"><span class="legend-color-dot" style="background-color:#B45309;"></span><span>Cần cải tiến: <strong>${caiTienCount}</strong> (${caiTienPct.toFixed(1).replace('.', ',')}%)</span></div>
+        <div class="legend-item"><span class="legend-color-dot" style="background-color:#B91C1C;"></span><span>Không đạt: <strong>${khongDatCount}</strong> (${khongDatPct.toFixed(1).replace('.', ',')}%)</span></div>
+      `;
+    }
+  },
+
+  renderTopDefects(topDefects) {
+    const container = document.getElementById('top-defects-container');
+    if (!container) return;
+
+    if (!topDefects || topDefects.length === 0) {
+      container.innerHTML = '<div style="padding:16px; color:var(--ink-2); text-align:center; font-size:12px;">Không có tiêu chuẩn nào bị chấm không đạt.</div>';
+      return;
+    }
+
+    let html = '';
+    topDefects.slice(0, 5).forEach((d) => {
+      const fullText = d.muc_ten || d.noi_dung || '';
+      const rate = d.failed_rate != null ? d.failed_rate : (d.defect_rate || 0);
+      const rateFormatted = rate.toFixed(1).replace('.', ',');
 
       html += `
-        <tr>
-          <td><strong>${a.dept_name}</strong></td>
-          <td><span class="rating-badge ${a.rating_code}">${a.rating}</span></td>
-          <td>${a.inspection_time}</td>
-          <td><strong>${deadline || 'Chưa cập nhật'}</strong></td>
-          <td><span style="font-weight:700; color:${isDanger ? 'var(--status-danger)' : 'var(--status-warning)'};">${typeText}</span></td>
-        </tr>
+        <div class="top-defect-item">
+          <div class="defect-item-header">
+            <span class="defect-item-title">Mục ${d.muc_stt}: ${fullText}</span>
+            <span class="defect-item-rate tabular-nums">${rateFormatted}%</span>
+          </div>
+          <div class="defect-bar-track">
+            <div class="defect-bar-fill" style="width: ${Math.min(100, Math.max(8, rate))}%;"></div>
+          </div>
+        </div>
       `;
     });
-    tableBody.innerHTML = html;
+
+    container.innerHTML = html;
+  },
+
+  // ==================== 2. PHÂN HỆ LỊCH SỬ (ARCHIVE) ====================
+  async loadArchiveList() {
+    const tableBody = document.getElementById('archive-table-body');
+    const mobileList = document.getElementById('mobile-archive-list');
+
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--ink-2);">Đang tải danh sách...</td></tr>';
+    if (mobileList) mobileList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--ink-2);">Đang tải danh sách...</div>';
+
+    try {
+      let url = `/api/inspections?year=${App.currentYear}`;
+      if (App.currentQuarter) url += `&quarter=${App.currentQuarter}`;
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Không thể tải lịch sử kiểm tra');
+      const data = await res.json();
+      this.archiveData = data;
+
+      this.filterArchiveTable();
+    } catch (e) {
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="9" style="color:var(--status-danger); text-align:center; padding:24px;">Lỗi tải lịch sử: ${e.message}</td></tr>`;
+      }
+      App.showToast(`Lỗi: ${e.message}`, 'error');
+    }
+  },
+
+  renderArchive(items) {
+    const tableBody = document.getElementById('archive-table-body');
+    const mobileList = document.getElementById('mobile-archive-list');
+
+    if (!items || items.length === 0) {
+      const emptyHtml = `
+        <div class="empty-state-card">
+          ${Icons.clipboardCheck('icon-xl')}
+          <div class="empty-title">Không tìm thấy đợt kiểm tra nào</div>
+          <div class="empty-desc">Chưa có dữ liệu phù hợp với điều kiện tìm kiếm hoặc kỳ giám sát này.</div>
+          <button type="button" class="btn-primary" onclick="InspectionForm.resetForm()">
+            ${Icons.plus('icon-sm')}
+            <span>Bắt đầu đợt kiểm tra mới</span>
+          </button>
+        </div>
+      `;
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="9" style="padding:0;">${emptyHtml}</td></tr>`;
+      }
+      if (mobileList) {
+        mobileList.innerHTML = emptyHtml;
+      }
+      return;
+    }
+
+    // Render Desktop Table (>= 1024px)
+    if (tableBody) {
+      tableBody.innerHTML = items.map(r => {
+        const ratingCode = r.rating_code || 'dat';
+        const ratingText = r.rating || 'Đạt';
+        const isLocked = r.trang_thai === 'da_khoa';
+        const isDraft = r.trang_thai === 'nhap' || r.trang_thai === 'DRAFT';
+        const statusBadge = isLocked 
+          ? `<span class="badge-status locked">${Icons.database('icon-xs')} Đã khóa</span>`
+          : (isDraft 
+              ? `<span class="badge-status draft">${Icons.edit('icon-xs')} Bản nháp</span>` 
+              : `<span class="badge-status completed">${Icons.check('icon-xs')} Hoàn tất</span>`);
+
+        return `
+          <tr>
+            <td><strong class="tabular-nums">#${r.id}</strong></td>
+            <td>
+              <strong>${r.dept_name || 'Khoa chưa đặt'}</strong>
+              <div style="font-size:11px; color:var(--ink-2);">${r.dept_block || ''}</div>
+            </td>
+            <td><span class="tabular-nums">Quý ${r.quarter}/${r.year}</span></td>
+            <td><span class="tabular-nums">${r.inspection_time || '—'}</span></td>
+            <td>${r.head_nurse || '—'}</td>
+            <td>
+              <strong class="tabular-nums">${(r.compliance_rate || 0).toFixed(1).replace('.', ',')}%</strong>
+              <div style="font-size:11px; color:var(--ink-2);">${r.total_achieved_score || 0}đ</div>
+            </td>
+            <td><span class="rating-pill-sm ${ratingCode}">${ratingText}</span></td>
+            <td>${statusBadge}</td>
+            <td style="text-align:right;">
+              <div class="table-actions-row">
+                <button type="button" class="btn-tint btn-sm" title="Xem hoặc chỉnh sửa" onclick="InspectionForm.loadExistingInspection(${r.id})">
+                  ${Icons.edit('icon-xs')}
+                  <span>Xem/Sửa</span>
+                </button>
+                <a href="/api/inspections/${r.id}/export-docx" target="_blank" class="btn-tint btn-sm" title="Tải file Word">
+                  ${Icons.fileText('icon-xs')}
+                  <span>Word</span>
+                </a>
+                <a href="/api/inspections/${r.id}/export-pdf" target="_blank" class="btn-tint btn-sm" title="Tải file PDF">
+                  ${Icons.file('icon-xs')}
+                  <span>PDF</span>
+                </a>
+                <button type="button" class="btn-icon btn-sm" title="Xóa đợt kiểm tra" onclick="Dashboard.deleteInspection(${r.id}, '${(r.dept_name || '').replace(/'/g, "\\'")}')">
+                  ${Icons.trash('icon-xs')}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Render Mobile Cards (< 1024px)
+    if (mobileList) {
+      mobileList.innerHTML = items.map(r => {
+        const ratingCode = r.rating_code || 'dat';
+        const ratingText = r.rating || 'Đạt';
+        const isLocked = r.trang_thai === 'da_khoa';
+        const isDraft = r.trang_thai === 'nhap' || r.trang_thai === 'DRAFT';
+        const statusBadge = isLocked 
+          ? `<span class="badge-status locked">${Icons.database('icon-xs')} Đã khóa</span>`
+          : (isDraft 
+              ? `<span class="badge-status draft">${Icons.edit('icon-xs')} Bản nháp</span>` 
+              : `<span class="badge-status completed">${Icons.check('icon-xs')} Hoàn tất</span>`);
+
+        return `
+          <div class="mobile-archive-card">
+            <div class="mobile-card-top">
+              <div>
+                <span class="mobile-card-id">#${r.id}</span>
+                <span class="mobile-card-title">${r.dept_name || 'Khoa chưa đặt'}</span>
+              </div>
+              <span class="rating-pill-sm ${ratingCode}">${ratingText}</span>
+            </div>
+
+            <div class="mobile-card-meta">
+              <div><strong>Thời gian:</strong> <span class="tabular-nums">${r.inspection_time || '—'}</span></div>
+              <div><strong>ĐD Trưởng:</strong> ${r.head_nurse || '—'}</div>
+              <div><strong>Tỷ lệ:</strong> <span class="tabular-nums">${(r.compliance_rate || 0).toFixed(1).replace('.', ',')}% (${r.total_achieved_score || 0}đ)</span></div>
+              <div><strong>Trạng thái:</strong> ${statusBadge}</div>
+            </div>
+
+            <div class="mobile-card-actions">
+              <button type="button" class="btn-primary btn-sm flex-1" onclick="InspectionForm.loadExistingInspection(${r.id})">
+                ${Icons.edit('icon-xs')}
+                <span>Mở</span>
+              </button>
+              <a href="/api/inspections/${r.id}/export-docx" target="_blank" class="btn-tint btn-sm">
+                ${Icons.fileText('icon-xs')}
+                <span>Word</span>
+              </a>
+              <a href="/api/inspections/${r.id}/export-pdf" target="_blank" class="btn-tint btn-sm">
+                ${Icons.file('icon-xs')}
+                <span>PDF</span>
+              </a>
+              <button type="button" class="btn-icon btn-sm" onclick="Dashboard.deleteInspection(${r.id}, '${(r.dept_name || '').replace(/'/g, "\\'")}')">
+                ${Icons.trash('icon-xs')}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  },
+
+  filterArchiveTable() {
+    const searchInput = document.getElementById('archive-search-input');
+    const statusSelect = document.getElementById('archive-status-filter');
+    const ratingSelect = document.getElementById('archive-rating-filter');
+
+    const query = (searchInput?.value || '').toLowerCase().trim();
+    const statusVal = statusSelect?.value || 'all';
+    const ratingVal = ratingSelect?.value || 'all';
+
+    const filtered = this.archiveData.filter(r => {
+      const matchesSearch = !query || 
+        (r.dept_name && r.dept_name.toLowerCase().includes(query)) ||
+        (r.head_nurse && r.head_nurse.toLowerCase().includes(query)) ||
+        String(r.id).includes(query);
+
+      let matchesStatus = true;
+      if (statusVal === 'hoan_tat') matchesStatus = r.trang_thai === 'hoan_tat';
+      else if (statusVal === 'nhap') matchesStatus = (r.trang_thai === 'nhap' || r.trang_thai === 'DRAFT');
+      else if (statusVal === 'da_khoa') matchesStatus = r.trang_thai === 'da_khoa';
+
+      let matchesRating = true;
+      if (ratingVal !== 'all') {
+        matchesRating = (r.rating_code || '').toLowerCase() === ratingVal.toLowerCase() ||
+                        (r.rating || '').toLowerCase() === ratingVal.toLowerCase();
+      }
+
+      return matchesSearch && matchesStatus && matchesRating;
+    });
+
+    this.renderArchive(filtered);
+  },
+
+  async deleteInspection(roundId, deptName) {
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa đợt kiểm tra #${roundId} của khoa ${deptName || ''}?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/inspections/${roundId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Không thể xóa');
+      }
+      App.showToast(`Đã xóa thành công đợt kiểm tra #${roundId}`, 'success');
+      this.loadArchiveList();
+      if (this.dashboardData) {
+        this.loadStats();
+      }
+    } catch (e) {
+      App.showToast(`Lỗi: ${e.message}`, 'error');
+    }
   }
 };
+
+window.Dashboard = Dashboard;

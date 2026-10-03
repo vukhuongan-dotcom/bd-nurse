@@ -16,7 +16,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from database import get_connection
 
-PROJECT_ROOT = Path("/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com/Drive của tôi/KHÁC/DAO/WEB KIỂM TRA CHẤT LƯỢNG KHOA")
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent))
 TEMPLATE_PATH = PROJECT_ROOT / "templates" / "BK-GS-DD.01_template.docx"
 DOCX_EXPORT_DIR = PROJECT_ROOT / "exports" / "docx"
 PDF_EXPORT_DIR = PROJECT_ROOT / "exports" / "pdf"

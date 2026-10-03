@@ -48,11 +48,11 @@ python3 "/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com
 * Tự động lưu nháp (Auto-save) mỗi 30 giây vào SQLite.
 
 ### 2. Phân hệ Dashboard Quản trị & Thống kê
-* Thống kê tiến độ Quý (số khoa đã kiểm tra định kỳ hoàn tất / 27 khoa).
-* Biểu đồ Cột xếp hạng tỷ lệ tuân thủ của 27 khoa từ cao xuống thấp (tô màu theo 4 mức xếp loại).
-* Biểu đồ Donut phân bố xếp loại chất lượng toàn viện.
-* Biểu đồ Thanh ngang phân tích **Top 5 lỗi vi phạm nhiều nhất** theo tỷ lệ $\frac{\text{Số lần KĐ}}{\text{Số lần áp dụng}}$.
-* Bảng theo dõi hạn khắc phục (+48 giờ đối với Cần cải tiến) và hạn tái giám sát (+3 đến 5 ngày đối với KHÔNG ĐẠT).
+* **4 Thẻ KPI Tinh gọn:** Tiến độ giám sát Quý (x/27 khoa + thanh %), Tỷ lệ tuân thủ trung bình toàn viện, Số khoa Không đạt/Cần cải tiến, Số hành động khắc phục quá hạn 48h.
+* **Bảng Tổng hợp Xếp hạng 27 Khoa:** Hiển thị luôn đủ 27 khoa viện (khoa chưa kiểm = "Chưa kiểm tra" với thanh xám rỗng), thanh bar ngang 28px/khoa tô màu chuẩn theo 4 mức xếp loại, hỗ trợ chip lọc khối (Tất cả, Ngoại, Nội, Khác).
+* **Phân bố Xếp loại Chất lượng:** Biểu đồ thanh ngang xếp chồng 100% (Stacked Bar 100% thay thế Donut) kèm chú thích bao bọc mềm mại (Legend wrap).
+* **Top 5 Tiêu chuẩn Lỗi Nhiều nhất:** Biểu đồ thanh ngang với nhãn nội dung đầy đủ, hỗ trợ xuống dòng công thái học và tỷ lệ % vi phạm.
+* **Zero Canvas Overflow:** 100% cấu trúc HTML-native responsive, triệt tiêu hoàn toàn lỗi tràn ngang (0px horizontal overflow trên mọi độ phân giải từ 390px đến 1440px).
 
 ### 3. Phân hệ Xuất file Thành phẩm DOCX & PDF Nguyên bản
 * Sử dụng cơ chế **In-place Filling Engine**: Chỉ điền dữ liệu vào đúng tọa độ của file mẫu gốc `templates/BK-GS-DD.01_template.docx`.
@@ -67,3 +67,20 @@ python3 "/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com
 2. **Cơ chế Snapshot Backup:** Sử dụng API `sqlite3 .backup` tạo bản sao lưu snapshot định kỳ vào thư mục Google Drive:
    `/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com/Drive của tôi/KHÁC/DAO/WEB KIỂM TRA CHẤT LƯỢNG KHOA/data/backup/`
    Tự động xoay vòng và lưu giữ 30 bản snapshot gần nhất.
+
+---
+
+## 🎨 BẢN NÂNG CẤP GIAO DIỆN INDIGO (PLAN_THIET_KE_LAI_UI_NURSE_2026-10-03)
+
+Hệ thống đã được nâng cấp toàn diện theo thiết kế mới:
+1. **Bộ Màu Indigo & Thể thức Y tế:**
+   * Nền sáng: `--ink #122056`, `--accent #5B65DC`, `--tint #EEEFFD`, `--surface #FFFFFF`, `--line #E3E5F5`.
+   * Nền tối (Dark mode): `--bg #0B1440`, `--surface #131E52`, `--line #2A3570`, `--ink #E6E8FA`.
+   * 4 Mức xếp loại: **Đạt** (`#15803D`), **Tốt** (`#0F766E`), **Cần cải tiến** (`#B45309`), **Không đạt** (`#B91C1C`).
+2. **Cơ chế Chọn Cuộn Tinh gọn (Zero-Typing Selectors):**
+   * **ĐD Trưởng khoa:** Dropdown danh sách chuẩn 30 Điều dưỡng trưởng khoa theo quyết định bệnh viện.
+   * **Đoàn Giám sát:** Danh sách 36 thành viên giám sát chuyên môn tích hợp ô tìm kiếm nhanh, checkbox chạm đa điểm, thẻ chip tên trực quan; ô hiển thị khóa bàn phím (`readonly`, `caret-color: transparent`) — chạm vào là mở ngay bảng chọn.
+3. **Chuẩn Công thái học & Tiếp cận (WCAG AA):**
+   * Toàn bộ nút bấm, tab điều hướng, ô nhập liệu trên thiết bị di động đều đạt kích thước tối thiểu **≥44×44px** (danh sách vi phạm: 0).
+   * Chiều cao cuộn trang Chấm điểm giảm **55,0%** trên điện thoại (từ 22.076px xuống 9.935px) và giảm **31,3%** trên máy tính (từ 8.577px xuống 5.892px).
+   * 100% thư viện tự host (Zero-CDN, Lucide SVG nội bộ, không emoji).

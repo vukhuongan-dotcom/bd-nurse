@@ -2,347 +2,688 @@
 <html lang="vi" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>NURSE | Hệ Thống Giám Sát Chuyên Môn Điều Dưỡng BVBD</title>
-  <link rel="icon" href="/static/brand/favicon.ico" sizes="16x16 32x32 48x48" />
-  <link rel="icon" type="image/svg+xml" href="/static/brand/nurse-icon.svg" />
-  <link rel="apple-touch-icon" href="/static/brand/icon-180.png" />
+  <link rel="icon" href="/static/brand/indigo/favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" type="image/svg+xml" href="/static/brand/indigo/nurse-icon.svg" />
+  <link rel="apple-touch-icon" href="/static/brand/indigo/icon-180.png" />
   <link rel="stylesheet" href="/static/css/tokens.css" />
   <link rel="stylesheet" href="/static/css/app.css" />
 </head>
 <body>
 
-  <!-- Top App Header -->
-  <header class="app-header">
+  <!-- Top App Header (64px trên desktop, 56px trên mobile) -->
+  <header class="app-header" id="app-header">
     <div class="header-container">
+      
+      <!-- Brand Logo / Wordmark -->
       <div class="brand-wrapper">
-        <img id="app-logo-wordmark" class="brand-wordmark-logo" src="/static/brand/nurse-wordmark-light.svg" alt="NURSE – Giám sát chất lượng chuyên môn điều dưỡng" height="30" />
-        <div class="brand-divider"></div>
-        <div class="brand-text-col">
-          <div class="brand-title">
-            <span class="brand-subtitle-bold">Giám sát chất lượng / chuyên môn điều dưỡng</span>
-            <span class="brand-badge">BK-GS-ĐD.01</span>
-          </div>
-          <div class="brand-subtext">Bệnh viện Bình Dân · Lần BH: 02 (2026)</div>
-        </div>
+        <a href="#tab-inspection" class="brand-link" onclick="App.switchTab('tab-inspection'); return false;">
+          <!-- Desktop Wordmark (>=1024px) -->
+          <img id="app-logo-wordmark" class="brand-wordmark-logo" src="/static/brand/indigo/nurse-wordmark-light.svg" alt="NURSE – Giám sát chất lượng chuyên môn điều dưỡng" height="30" />
+          <!-- Mobile Icon (<1024px) -->
+          <img id="app-logo-icon" class="brand-icon-logo" src="/static/brand/indigo/nurse-icon.svg" alt="NURSE" width="32" height="32" />
+        </a>
       </div>
 
+      <!-- Desktop Navigation Tabs (>=1024px) -->
+      <nav class="desktop-nav-tabs" role="tablist" aria-label="Điều hướng phân hệ">
+        <button type="button" role="tab" class="nav-tab active" data-tab="tab-inspection" aria-selected="true" id="tab-btn-inspection">
+          <span class="tab-icon-wrap" id="icon-tab-inspection"></span>
+          <span>Chấm điểm</span>
+        </button>
+        <button type="button" role="tab" class="nav-tab" data-tab="tab-dashboard" aria-selected="false" id="tab-btn-dashboard">
+          <span class="tab-icon-wrap" id="icon-tab-dashboard"></span>
+          <span>Thống kê</span>
+        </button>
+        <button type="button" role="tab" class="nav-tab" data-tab="tab-archive" aria-selected="false" id="tab-btn-archive">
+          <span class="tab-icon-wrap" id="icon-tab-archive"></span>
+          <span>Lịch sử</span>
+        </button>
+      </nav>
+
+      <!-- Header Controls: Chip Kỳ + Nút Theme -->
       <div class="header-controls">
-        <div class="filter-pill">
-          <span class="filter-label">Năm:</span>
-          <select id="global-year-select" class="select-control">
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
+        
+        <!-- Period Chip with Popover Picker -->
+        <div class="period-chip-wrap">
+          <button type="button" id="btn-period-chip" class="chip-period" aria-haspopup="dialog" aria-expanded="false" title="Chọn kỳ giám sát">
+            <span class="chip-icon" id="icon-period-calendar"></span>
+            <span id="period-chip-label" class="chip-text">Quý IV/2026</span>
+            <span class="chip-arrow" id="icon-period-chevron"></span>
+          </button>
+
+          <!-- Popover Modal -->
+          <div id="period-popover" class="period-popover" hidden>
+            <div class="popover-title">Chọn kỳ giám sát</div>
+            <div class="popover-field">
+              <label for="global-year-select" class="popover-label">Năm giám sát</label>
+              <select id="global-year-select" class="form-select">
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+            <div class="popover-field">
+              <label for="global-quarter-select" class="popover-label">Kỳ giám sát</label>
+              <select id="global-quarter-select" class="form-select">
+                <option value="4">Quý IV</option>
+                <option value="3">Quý III</option>
+                <option value="2">Quý II</option>
+                <option value="1">Quý I</option>
+                <option value="all">Toàn bộ năm</option>
+              </select>
+            </div>
+            <div class="popover-actions">
+              <button type="button" class="btn-primary btn-sm btn-full-width" id="btn-apply-period">
+                Áp dụng
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="filter-pill">
-          <span class="filter-label">Kỳ giám sát:</span>
-          <select id="global-quarter-select" class="select-control">
-            <option value="4">Quý IV</option>
-            <option value="3">Quý III</option>
-            <option value="2">Quý II</option>
-            <option value="1">Quý I</option>
-            <option value="all">Toàn bộ năm</option>
-          </select>
-        </div>
+        <!-- Theme Toggle Button -->
+        <button type="button" id="btn-theme-toggle" class="btn-icon" aria-label="Chuyển chế độ Sáng/Tối" title="Chuyển chế độ Sáng/Tối">
+          <span id="icon-theme-toggle"></span>
+        </button>
 
-        <button type="button" id="btn-theme-toggle" class="btn-icon" title="Chuyển chế độ Sáng/Tối">🌙</button>
       </div>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
-  <nav class="app-nav">
-    <div class="nav-container">
-      <div class="nav-tab active" data-tab="tab-inspection">
-        <span>📝</span>
-        <span>Bảng kiểm Thực địa (63 Tiêu chuẩn con)</span>
-      </div>
-      <div class="nav-tab" data-tab="tab-dashboard">
-        <span>📊</span>
-        <span>Dashboard Quản trị & Thống kê</span>
-      </div>
-      <div class="nav-tab" data-tab="tab-archive">
-        <span>📁</span>
-        <span>Lịch sử & Xuất Báo cáo</span>
-      </div>
-    </div>
-  </nav>
-
   <!-- Main Container -->
-  <main class="app-main">
+  <main class="app-main" id="app-main">
 
-    <!-- TAB 1: NHẬP LIỆU THỰC ĐỊA -->
-    <div id="tab-inspection" class="tab-pane active">
+    <!-- ==================== TAB 1: CHẤM ĐIỂM (INSPECTION) ==================== -->
+    <section id="tab-inspection" class="tab-pane active" role="tabpanel" aria-labelledby="tab-btn-inspection">
       
-      <!-- Thông tin chung đợt kiểm tra (Bố cục chuẩn hóa chống vỡ hàng) -->
+      <div class="inspection-layout">
+
+        <!-- Cột Chính: Bảng kiểm, Thông tin đợt & Kế hoạch -->
+        <div class="inspection-main-col">
+
+          <!-- 1. Thông tin đợt giám sát (Khối thu gọn được sau khi điền) -->
+          <details id="inspect-meta-details" class="meta-details-card" open>
+            <summary class="meta-summary-header">
+              <div class="meta-summary-left">
+                <span class="meta-card-title">Thông tin đợt kiểm tra</span>
+                <span id="meta-summary-badge" class="meta-summary-pill" style="display:none;"></span>
+              </div>
+              <div class="meta-summary-actions" onclick="event.stopPropagation()">
+                <button type="button" class="btn-tint btn-sm" onclick="InspectionForm.resetForm()">
+                  <span id="icon-reset-form"></span>
+                  <span>Làm mới</span>
+                </button>
+                <span class="meta-summary-chevron" id="icon-meta-chevron"></span>
+              </div>
+            </summary>
+
+            <div class="meta-form-body">
+              <div class="form-grid">
+                <!-- Khoa & Loại đợt -->
+                <div class="form-group form-col-8">
+                  <label class="form-label" for="inspect-dept-select">
+                    Khoa được giám sát <span class="text-danger">*</span>
+                  </label>
+                  <select id="inspect-dept-select" class="form-select"></select>
+                </div>
+
+                <div class="form-group form-col-4">
+                  <label class="form-label" for="inspect-type">
+                    Loại đợt kiểm tra
+                  </label>
+                  <select id="inspect-type" class="form-select">
+                    <option value="DINH_KY">Định kỳ hàng quý</option>
+                    <option value="DOT_XUAT">Đột xuất</option>
+                    <option value="TAI_GIAM_SAT">Tái giám sát (sau cải tiến)</option>
+                  </select>
+                </div>
+
+                <!-- Thời gian & ĐD Trưởng khoa -->
+                <div class="form-group form-col-6">
+                  <label class="form-label" for="inspect-datetime-local">
+                    Thời gian kiểm tra <span class="text-danger">*</span>
+                  </label>
+                  <input type="datetime-local" id="inspect-datetime-local" class="form-input" />
+                  <input type="hidden" id="inspect-time" />
+                </div>
+
+                <div class="form-group form-col-6">
+                  <label class="form-label" for="inspect-head-nurse">
+                    Điều dưỡng trưởng khoa <span class="text-danger">*</span>
+                    <span class="form-label-desc">(Cuộn chọn 1-30)</span>
+                  </label>
+                  <select id="inspect-head-nurse" class="form-select">
+                    <option value="">-- Chọn Điều dưỡng trưởng khoa --</option>
+                    <option value="Trần Thị Thu Nga">1. Trần Thị Thu Nga</option>
+                    <option value="Nguyễn Thị Ngọc Thùy">2. Nguyễn Thị Ngọc Thùy</option>
+                    <option value="Huỳnh Thị Thanh Tâm">3. Huỳnh Thị Thanh Tâm</option>
+                    <option value="Trần Thị Anh Đào">4. Trần Thị Anh Đào</option>
+                    <option value="Phạm Thị Thanh Sang">5. Phạm Thị Thanh Sang</option>
+                    <option value="Vũ Thị Hồng Yến">6. Vũ Thị Hồng Yến</option>
+                    <option value="Trân Thị Xuân Hòa">7. Trân Thị Xuân Hòa</option>
+                    <option value="Ngô Thị Ánh Nghĩa">8. Ngô Thị Ánh Nghĩa</option>
+                    <option value="Tăng Thị Quỳnh Mai">9. Tăng Thị Quỳnh Mai</option>
+                    <option value="Huỳnh Thị Hoàng Oanh">10. Huỳnh Thị Hoàng Oanh</option>
+                    <option value="Nguyễn Thị Thu Nga">11. Nguyễn Thị Thu Nga</option>
+                    <option value="Nguyễn Thị Hoàng Hoa">12. Nguyễn Thị Hoàng Hoa</option>
+                    <option value="Nguyễn Thị Bích Dung">13. Nguyễn Thị Bích Dung</option>
+                    <option value="Diệp Thị Thùy Linh">14. Diệp Thị Thùy Linh</option>
+                    <option value="Trương Thị Kim Thoa">15. Trương Thị Kim Thoa</option>
+                    <option value="Nguyễn Hạnh Minh Tâm">16. Nguyễn Hạnh Minh Tâm</option>
+                    <option value="Ngô Thị Hồng">17. Ngô Thị Hồng</option>
+                    <option value="Chu Thị Nguyệt">18. Chu Thị Nguyệt</option>
+                    <option value="Phạm Thị Diệu Hiền">19. Phạm Thị Diệu Hiền</option>
+                    <option value="Lê Anh Bảo">20. Lê Anh Bảo</option>
+                    <option value="Võ Thị Như Sương">21. Võ Thị Như Sương</option>
+                    <option value="Bùi Thị Ngọc Truyền">22. Bùi Thị Ngọc Truyền</option>
+                    <option value="Nguyễn Thị Thùy Linh">23. Nguyễn Thị Thùy Linh</option>
+                    <option value="Trần Thị Kim Hương">24. Trần Thị Kim Hương</option>
+                    <option value="Nguyễn Văn Cảnh">25. Nguyễn Văn Cảnh</option>
+                    <option value="Nguyễn Thành Trung">26. Nguyễn Thành Trung</option>
+                    <option value="Trần Thị Khuê Nữ">27. Trần Thị Khuê Nữ</option>
+                    <option value="Trần Thị Minh Hòa">28. Trần Thị Minh Hòa</option>
+                    <option value="Trần Ngọc Thúy Uyên">29. Trần Ngọc Thúy Uyên</option>
+                    <option value="Nguyễn Thị Thùy Trinh">30. Nguyễn Thị Thùy Trinh</option>
+                  </select>
+                </div>
+
+                <!-- Thành viên đoàn giám sát -->
+                <div class="form-group form-col-12">
+                  <div class="inspectors-label-row">
+                    <label class="form-label" for="inspect-inspectors" style="margin-bottom:0;">
+                      Thành viên đoàn giám sát <span class="text-danger">*</span>
+                      <span class="form-label-desc">(Cuộn danh sách 1-36 để chọn nhanh)</span>
+                    </label>
+                    <button type="button" class="btn-picker-toggle" id="btn-toggle-inspectors-picker" onclick="InspectionForm.toggleInspectorsPicker()">
+                      <span id="icon-inspectors-btn"></span>
+                      <span>Chọn danh sách (1-36)</span>
+                      <span class="badge-count" id="inspectors-count-badge">0</span>
+                    </button>
+                  </div>
+
+                  <!-- Chips hiển thị người đã chọn -->
+                  <div class="selected-inspectors-chips" id="selected-inspectors-chips" style="display:none;"></div>
+
+                  <!-- Bảng chọn cuộn danh sách 36 thành viên -->
+                  <div class="inspectors-picker-panel" id="inspectors-picker-panel" style="display:none;">
+                    <div class="picker-panel-header">
+                      <div class="picker-search-wrap">
+                        <span class="picker-search-icon" id="icon-picker-search"></span>
+                        <input type="text" id="inspectors-search-input" class="picker-search-input" placeholder="Tìm tên thành viên..." oninput="InspectionForm.filterInspectorsList(this.value)" />
+                      </div>
+                      <div class="picker-panel-actions">
+                        <button type="button" class="btn-ghost-sm" onclick="InspectionForm.clearAllInspectors()">Bỏ chọn tất cả</button>
+                        <button type="button" class="btn-tint-sm" onclick="InspectionForm.toggleInspectorsPicker(false)">Đóng</button>
+                      </div>
+                    </div>
+                    
+                    <div class="inspectors-scroll-list" id="inspectors-scroll-list">
+                      <!-- Render động 36 thành viên từ mảng INSPECTORS_LIST -->
+                    </div>
+                  </div>
+
+                  <textarea id="inspect-inspectors" class="form-textarea form-textarea-readonly" rows="2" 
+                            readonly
+                            onclick="InspectionForm.toggleInspectorsPicker(true)"
+                            placeholder="Nhấp vào đây để chọn thành viên đoàn giám sát từ danh sách (1-36)..."
+                            title="Nhấp để chọn thành viên từ danh sách"></textarea>
+                </div>
+              </div>
+
+              <!-- Thông báo preset KAP tự động nếu có -->
+              <div id="department-preset-notice" class="preset-notice-bar" style="display:none;">
+                <span id="icon-preset-info"></span>
+                <span id="preset-notice-text">Khoa đặc thù: Đã tự động áp dụng gợi ý các mục Không áp dụng.</span>
+              </div>
+            </div>
+          </details>
+
+          <!-- 2. Thanh nhảy chặng sticky (Stage Jump Bar) -->
+          <nav class="stage-nav-bar" id="stage-nav-bar" aria-label="Chuyển nhanh giữa 5 chặng">
+            <div class="stage-nav-label">Chặng:</div>
+            <div class="stage-chips-scroll" id="stage-chips-container">
+              <!-- Render động chip I, II, III, IV, V -->
+            </div>
+          </nav>
+
+          <!-- 3. Danh sách 5 Chặng & 63 Tiêu chuẩn con -->
+          <div id="criteria-stages-container" class="criteria-stages-container">
+            <!-- Render động 5 chặng accordion và các mục/dòng con -->
+          </div>
+
+          <!-- 4. Cổng vi phạm an toàn người bệnh nghiêm trọng (Đặt sau bảng kiểm) -->
+          <section class="serious-violation-card" id="serious-violation-section">
+            <div class="switch-row">
+              <label class="toggle-switch" for="serious-violation-cb">
+                <input type="checkbox" id="serious-violation-cb" onchange="InspectionForm.onSeriousViolationChange(this.checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+              <div class="switch-label-wrap">
+                <div class="switch-title">Vi phạm an toàn người bệnh nghiêm trọng</div>
+                <div class="switch-desc">Bật lên sẽ xếp loại Không đạt và yêu cầu lập biên bản</div>
+              </div>
+            </div>
+
+            <!-- Chi tiết vi phạm nghiêm trọng khi bật switch -->
+            <div id="serious-violation-details" class="serious-violation-details" style="display:none;">
+              <div class="form-grid">
+                <div class="form-group form-col-12">
+                  <label class="form-label" for="serious-violation-type">
+                    Loại vi phạm quy chế an toàn người bệnh <span class="text-danger">*</span>
+                  </label>
+                  <select id="serious-violation-type" class="form-select">
+                    <option value="Nhầm lẫn người bệnh">Nhầm lẫn người bệnh</option>
+                    <option value="Nhầm nhóm máu / Quy trình an toàn truyền máu">Nhầm nhóm máu / Quy trình an toàn truyền máu</option>
+                    <option value="Nhầm thuốc / Tai biến sử dụng thuốc">Nhầm thuốc / Tai biến sử dụng thuốc</option>
+                    <option value="Dư / thiếu thuốc, vật tư y tế nghiêm trọng">Dư / thiếu thuốc, vật tư y tế nghiêm trọng</option>
+                    <option value="Báo cáo sai sự thật / Gian lận hồ sơ bệnh án">Báo cáo sai sự thật / Gian lận hồ sơ bệnh án</option>
+                    <option value="Sự cố y khoa nghiêm trọng khác (Sentinel Event)">Sự cố y khoa nghiêm trọng khác (Sentinel Event)</option>
+                  </select>
+                </div>
+
+                <div class="form-group form-col-12">
+                  <label class="form-label" for="serious-violation-desc">
+                    Mô tả cụ thể sự cố vi phạm an toàn người bệnh <span class="text-danger">*</span>
+                    <span class="form-label-desc">(Mô tả hành vi, không ghi họ tên bệnh nhân)</span>
+                  </label>
+                  <textarea id="serious-violation-desc" class="form-textarea" rows="2" placeholder="Mô tả tóm tắt sự cố, thời điểm phát hiện và người liên quan..."></textarea>
+                  <div class="dlp-alert" id="dlp-alert-serious"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. Kế hoạch hành động & Khắc phục -->
+          <details class="card corrective-plan-card" id="corrective-plan-details" open>
+            <summary class="corrective-summary-header">
+              <div class="card-heading-wrap">
+                <h3 class="card-heading">Kế hoạch hành động & Khắc phục tồn tại</h3>
+                <p class="card-caption">Ghi nhận các sai sót chuyên môn và thời hạn cam kết hoàn thành của khoa</p>
+              </div>
+              <span class="meta-summary-chevron" id="icon-plan-chevron"></span>
+            </summary>
+
+            <div class="form-grid" style="margin-top:16px;">
+              <div class="form-group form-col-12">
+                <label class="form-label" for="corrective-deficiencies">
+                  Tồn tại ghi nhận tại khoa (Tự động trích xuất các tiêu chuẩn Không đạt)
+                </label>
+                <textarea id="corrective-deficiencies" class="form-textarea font-mono" rows="2" placeholder="Hệ thống tự động tổng hợp danh sách các tiêu chuẩn không đạt..."></textarea>
+                <div class="dlp-alert" id="dlp-alert-deficiencies"></div>
+              </div>
+
+              <div class="form-group form-col-12">
+                <label class="form-label" for="corrective-measures">
+                  Biện pháp khắc phục của khoa <span class="text-danger">*</span>
+                </label>
+                <textarea id="corrective-measures" class="form-textarea" rows="2" placeholder="Đào tạo lại quy trình, tăng cường giám sát thường quy buồng bệnh..."></textarea>
+                <div class="dlp-alert" id="dlp-alert-measures"></div>
+              </div>
+
+              <div class="form-group form-col-6">
+                <label class="form-label" for="corrective-person">
+                  Người chịu trách nhiệm thực hiện
+                </label>
+                <input type="text" id="corrective-person" class="form-input" placeholder="ĐD Trưởng khoa & Tập thể điều dưỡng..." />
+              </div>
+
+              <div class="form-group form-col-6">
+                <label class="form-label" for="corrective-deadline">
+                  Thời hạn hoàn thành khắc phục (dd.mm.yyyy)
+                </label>
+                <input type="text" id="corrective-deadline" class="form-input" placeholder="25.10.2026" />
+              </div>
+            </div>
+          </details>
+
+        </div>
+
+        <!-- Cột Phụ: Sticky Summary Panel trên Desktop (>=1280px, 320px) -->
+        <aside class="desktop-summary-panel" id="desktop-summary-panel">
+          <div class="summary-card">
+            
+            <div class="summary-card-header">
+              <div class="summary-card-title">Tóm tắt kết quả</div>
+              <span id="desktop-rating-badge" class="rating-pill dat">
+                <span class="rating-icon" id="desktop-rating-icon"></span>
+                <span id="desktop-rating-text">Đạt</span>
+              </span>
+            </div>
+
+            <!-- Tỷ lệ tuân thủ & Điểm số -->
+            <div class="summary-hero-metric">
+              <div class="hero-rate-row">
+                <span id="desktop-score-rate" class="hero-rate">100,0%</span>
+                <span class="hero-rate-label">Tuân thủ</span>
+              </div>
+              <div class="hero-points-sub" id="desktop-score-points">
+                100,00 / 100,00 điểm
+              </div>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <!-- Tiến độ 5 chặng -->
+            <div class="summary-section">
+              <div class="section-label-row">
+                <span class="section-title">Tiến độ 5 chặng</span>
+                <span id="desktop-progress-overview" class="section-badge">63/63 đã chấm</span>
+              </div>
+              <div class="stages-progress-list" id="desktop-stages-progress-list">
+                <!-- Render 5 chặng -->
+              </div>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <!-- Danh sách Không đạt -->
+            <div class="summary-section">
+              <div class="section-label-row">
+                <span class="section-title">Tiêu chuẩn không đạt</span>
+                <span id="desktop-defects-count" class="defects-pill">0</span>
+              </div>
+              <div class="defects-scroll-area" id="desktop-defects-list">
+                <div class="empty-defects-note">Không có tiêu chuẩn bị trừ điểm</div>
+              </div>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <!-- Tác vụ chính -->
+            <div class="summary-actions-wrap">
+              <button type="button" id="btn-desktop-complete" class="btn-primary btn-full-width" onclick="InspectionForm.submitInspection('hoan_tat')">
+                <span id="icon-desktop-complete"></span>
+                <span>Hoàn tất kiểm tra</span>
+              </button>
+              
+              <button type="button" id="btn-desktop-save-draft" class="btn-tint btn-full-width" onclick="InspectionForm.submitInspection('nhap')">
+                <span id="icon-desktop-save"></span>
+                <span>Lưu nháp</span>
+              </button>
+
+              <!-- Nút xuất khi đã lưu/hoàn tất -->
+              <div class="export-actions-row" id="desktop-export-group" style="display:none;">
+                <button type="button" id="btn-desktop-export-docx" class="btn-tint btn-sm flex-1" onclick="InspectionForm.quickExportDOCX()">
+                  <span id="icon-desktop-docx"></span>
+                  <span>Xuất Word</span>
+                </button>
+                <button type="button" id="btn-desktop-export-pdf" class="btn-tint btn-sm flex-1" onclick="InspectionForm.quickExportPDF()">
+                  <span id="icon-desktop-pdf"></span>
+                  <span>Xuất PDF</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </aside>
+
+      </div>
+
+      <!-- Mobile Sticky Score Bar (<1280px) -->
+      <aside class="mobile-sticky-bar" id="mobile-sticky-bar">
+        <div class="mobile-bar-inner" onclick="InspectionForm.toggleBottomSheet(true)">
+          <div class="mobile-bar-left">
+            <span id="mobile-bar-rate" class="mobile-bar-rate">100,0%</span>
+            <span class="mobile-bar-dot">·</span>
+            <span id="mobile-bar-rating" class="rating-pill-sm dat">Đạt</span>
+            <span class="mobile-bar-dot">·</span>
+            <span id="mobile-bar-defects" class="mobile-bar-defects">0 KĐ</span>
+          </div>
+
+          <div class="mobile-bar-right" onclick="event.stopPropagation()">
+            <button type="button" id="btn-mobile-quick-complete" class="btn-primary btn-sm" onclick="InspectionForm.submitInspection('hoan_tat')">
+              Hoàn tất
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Mobile Bottom Sheet Modal (<1280px) -->
+      <div id="mobile-bottom-sheet-backdrop" class="sheet-backdrop" onclick="InspectionForm.toggleBottomSheet(false)" hidden></div>
+      <div id="mobile-bottom-sheet" class="bottom-sheet" hidden>
+        <div class="sheet-handle-bar" onclick="InspectionForm.toggleBottomSheet(false)">
+          <div class="sheet-handle"></div>
+        </div>
+
+        <div class="sheet-content">
+          <div class="sheet-header">
+            <div class="sheet-title">Chi tiết đánh giá đợt kiểm tra</div>
+            <button type="button" class="btn-icon btn-sm" onclick="InspectionForm.toggleBottomSheet(false)">
+              <span id="icon-sheet-close"></span>
+            </button>
+          </div>
+
+          <!-- Tóm tắt số liệu -->
+          <div class="sheet-summary-grid">
+            <div class="sheet-metric-card">
+              <span class="metric-caption">Tỷ lệ tuân thủ</span>
+              <span id="sheet-score-rate" class="metric-big">100,0%</span>
+            </div>
+            <div class="sheet-metric-card">
+              <span class="metric-caption">Xếp loại</span>
+              <span id="sheet-rating-pill" class="rating-pill dat">Đạt</span>
+            </div>
+            <div class="sheet-metric-card">
+              <span class="metric-caption">Điểm đạt</span>
+              <span id="sheet-score-points" class="metric-medium">100,00 / 100,00đ</span>
+            </div>
+            <div class="sheet-metric-card">
+              <span class="metric-caption">Không đạt</span>
+              <span id="sheet-defects-count" class="metric-medium text-danger">0 tiêu chuẩn</span>
+            </div>
+          </div>
+
+          <!-- Danh sách lỗi không đạt -->
+          <div class="sheet-defects-section">
+            <div class="sheet-section-title">Danh sách tiêu chuẩn không đạt (Chạm để xem)</div>
+            <div id="sheet-defects-list" class="sheet-defects-list">
+              <div class="empty-defects-note">Không có tiêu chuẩn bị trừ điểm</div>
+            </div>
+          </div>
+
+          <!-- Nút hành động -->
+          <div class="sheet-actions">
+            <button type="button" class="btn-primary btn-full-width" onclick="InspectionForm.submitInspection('hoan_tat'); InspectionForm.toggleBottomSheet(false);">
+              Hoàn tất kiểm tra
+            </button>
+            <button type="button" class="btn-tint btn-full-width" onclick="InspectionForm.submitInspection('nhap'); InspectionForm.toggleBottomSheet(false);">
+              Lưu nháp
+            </button>
+            <div class="sheet-export-row" id="sheet-export-group" style="display:none;">
+              <button type="button" class="btn-tint flex-1" onclick="InspectionForm.quickExportDOCX()">
+                Xuất Word (.docx)
+              </button>
+              <button type="button" class="btn-tint flex-1" onclick="InspectionForm.quickExportPDF()">
+                Xuất PDF (.pdf)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== TAB 2: THỐNG KÊ (DASHBOARD) ==================== -->
+    <section id="tab-dashboard" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-dashboard">
+      
+      <!-- 4 KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Tiến độ giám sát quý</div>
+          <div class="kpi-val-row">
+            <span id="kpi-progress-fraction" class="kpi-number">0/27</span>
+            <span id="kpi-progress-percent" class="kpi-percent">(0,0%)</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="kpi-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Tỷ lệ tuân thủ trung bình</div>
+          <div class="kpi-val-row">
+            <span id="kpi-avg-rate" class="kpi-number rate-accent">0,0%</span>
+          </div>
+          <div class="kpi-subtext" id="kpi-avg-subtext">Tính trên các đợt định kỳ đã hoàn tất</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Khoa không đạt / Cần cải tiến</div>
+          <div class="kpi-val-row">
+            <span id="kpi-non-compliant-count" class="kpi-number text-danger">0</span>
+            <span class="kpi-subtext" id="kpi-non-compliant-sub">khoa cần tái giám sát</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Hành động khắc phục quá hạn</div>
+          <div class="kpi-val-row">
+            <span id="kpi-overdue-count" class="kpi-number text-danger">0</span>
+            <span class="kpi-subtext">quá hạn cam kết 48h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lưới Dashboard Biểu đồ & Xếp hạng -->
+      <div class="dashboard-grid">
+        <!-- Cột 1: Bảng Xếp hạng 27 khoa -->
+        <div class="card dashboard-card-ranking">
+          <div class="card-heading-row">
+            <div>
+              <h3 class="card-heading">Bảng tổng hợp xếp hạng 27 khoa</h3>
+              <p class="card-caption">Đợt kiểm tra định kỳ gần nhất</p>
+            </div>
+            <div class="block-filter-chips">
+              <button type="button" class="btn-stage active" id="btn-block-all" onclick="Dashboard.filterBlock('all')">Tất cả</button>
+              <button type="button" class="btn-stage" id="btn-block-ngoai" onclick="Dashboard.filterBlock('Ngoại')">Ngoại</button>
+              <button type="button" class="btn-stage" id="btn-block-noi" onclick="Dashboard.filterBlock('Nội')">Nội</button>
+              <button type="button" class="btn-stage" id="btn-block-khac" onclick="Dashboard.filterBlock('Khác')">Khác</button>
+            </div>
+          </div>
+          <div id="department-ranking-container" class="ranking-container">
+            <!-- Render bảng danh sách 27 khoa -->
+          </div>
+        </div>
+
+        <!-- Cột 2: Phân bố Xếp loại & Top 5 lỗi -->
+        <div class="dashboard-side-col">
+          <!-- Phân bố xếp loại (Stacked bar ngang 100% thay donut) -->
+          <div class="card">
+            <div class="card-heading-row">
+              <h3 class="card-heading">Phân bố xếp loại chất lượng</h3>
+              <span class="card-tag">4 mức xếp loại</span>
+            </div>
+            <div id="rating-distribution-stacked-bar" class="stacked-bar-container" style="margin-top:12px;"></div>
+            <div id="rating-distribution-legend" class="rating-legend-wrap"></div>
+          </div>
+
+          <!-- Top 5 tiêu chuẩn con lỗi nhiều nhất (Bar ngang, nhãn đầy đủ, xuống dòng) -->
+          <div class="card" style="margin-top:16px;">
+            <div class="card-heading-row">
+              <h3 class="card-heading">Top 5 tiêu chuẩn lỗi nhiều nhất</h3>
+              <span class="card-tag">Tỷ lệ không đạt (%)</span>
+            </div>
+            <div id="top-defects-container" class="top-defects-container" style="margin-top:12px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== TAB 3: LỊCH SỬ & LƯU TRỮ (ARCHIVE) ==================== -->
+    <section id="tab-archive" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-archive">
+      
       <div class="card">
-        <div class="card-title">
-          <span>THÔNG TIN ĐỢT GIÁM SÁT CHUYÊN MÔN</span>
-          <button type="button" class="btn-secondary" onclick="InspectionForm.resetForm()" style="font-size:12px; padding:6px 12px; min-height:34px;">
-            🔄 Làm mới form
+        <div class="card-heading-row">
+          <h3 class="card-heading">Lịch sử các đợt kiểm tra & Xuất báo cáo</h3>
+          <button type="button" class="btn-tint btn-sm" onclick="App.backupDatabaseNow()">
+            <span id="icon-archive-db"></span>
+            <span>Sao lưu dữ liệu</span>
           </button>
         </div>
 
-        <div class="info-form-grid">
-          <!-- Hàng 1: Khoa (Rộng) & Loại đợt -->
-          <div class="form-group">
-            <label class="form-label" for="inspect-dept-select">
-              <span>Khoa được giám sát</span>
-              <span class="form-label-required">*</span>
-            </label>
-            <select id="inspect-dept-select" class="form-select"></select>
+        <!-- Thanh Tìm kiếm & Bộ lọc -->
+        <div class="archive-filter-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon" id="icon-archive-search"></span>
+            <input type="text" id="archive-search-input" class="form-input search-input" placeholder="Tìm kiếm theo tên khoa..." oninput="Dashboard.filterArchiveTable()" />
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="inspect-type">
-              <span>Loại đợt kiểm tra</span>
-            </label>
-            <select id="inspect-type" class="form-select">
-              <option value="DINH_KY">Định kỳ hàng quý</option>
-              <option value="DOT_XUAT">Đột xuất</option>
-              <option value="TAI_GIAM_SAT">Tái giám sát (sau vi phạm/cải tiến)</option>
+          <div class="filter-controls-row">
+            <select id="archive-status-filter" class="form-select filter-select" onchange="Dashboard.filterArchiveTable()">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="hoan_tat">Đã hoàn tất</option>
+              <option value="nhap">Bản nháp</option>
+              <option value="da_khoa">Đã khóa</option>
+            </select>
+
+            <select id="archive-rating-filter" class="form-select filter-select" onchange="Dashboard.filterArchiveTable()">
+              <option value="all">Tất cả xếp loại</option>
+              <option value="dat">Đạt (≥90%)</option>
+              <option value="tot">Tốt (80-89%)</option>
+              <option value="cai_tien">Cần cải tiến (70-79%)</option>
+              <option value="khong_dat">Không đạt (&lt;70%)</option>
             </select>
           </div>
-
-          <!-- Hàng 2: Thời gian & ĐD Trưởng khoa -->
-          <div class="row-time-nurse">
-            <div class="form-group">
-              <label class="form-label" for="inspect-time">
-                <span>Thời gian kiểm tra</span>
-                <span class="form-label-required">*</span>
-                <span class="form-label-desc">(HH:MM dd.mm.yyyy)</span>
-              </label>
-              <input type="text" id="inspect-time" class="form-input" placeholder="14:30 15.10.2026" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="inspect-head-nurse">
-                <span>Điều dưỡng Trưởng khoa</span>
-                <span class="form-label-required">*</span>
-              </label>
-              <input type="text" id="inspect-head-nurse" class="form-input" placeholder="Họ và tên ĐD Trưởng khoa..." />
-            </div>
-          </div>
-
-          <!-- Hàng 3: Thành viên đoàn giám sát -->
-          <div class="row-inspectors form-group">
-            <label class="form-label" for="inspect-inspectors">
-              <span>Thành viên đoàn giám sát</span>
-              <span class="form-label-required">*</span>
-              <span class="form-label-desc">(Nhập mỗi chuyên gia/giám sát viên trên một dòng riêng biệt)</span>
-            </label>
-            <textarea id="inspect-inspectors" class="form-textarea" rows="2" placeholder="ThS. ĐD. Trần Thị B&#10;CNĐD. Lê Văn C"></textarea>
-          </div>
         </div>
 
-        <div id="department-preset-notice" class="preset-bar" style="display:none;">
-          <span>ℹ️</span>
-          <span id="preset-notice-text">Khoa đặc thù: Đã áp dụng preset gợi ý tự động các mục Không áp dụng.</span>
-        </div>
-      </div>
-
-      <!-- Khung Cảnh báo Vi phạm An toàn NB Nghiêm trọng -->
-      <div class="card" style="border-left: 5px solid var(--status-danger);">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <label style="display:flex; align-items:center; gap:12px; font-weight:800; color:var(--status-danger); cursor:pointer;">
-            <input type="checkbox" id="serious-violation-cb" style="width:20px; height:20px; accent-color:var(--status-danger);" />
-            <span>⚠️ KÍCH HOẠT CỔNG VI PHẠM AN TOÀN NGƯỜI BỆNH NGHIÊM TRỌNG (Cưỡng chế xếp loại KHÔNG ĐẠT)</span>
-          </label>
-        </div>
-
-        <div id="serious-violation-details" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-strong);">
-          <div class="info-form-grid">
-            <div class="form-group" style="grid-column: 1 / -1;">
-              <label class="form-label" for="serious-violation-type">Loại vi phạm quy chế an toàn người bệnh *</label>
-              <select id="serious-violation-type" class="form-select">
-                <option value="Nhầm lẫn người bệnh">Nhầm lẫn người bệnh</option>
-                <option value="Nhầm nhóm máu / Quy trình an toàn truyền máu">Nhầm nhóm máu / Quy trình an toàn truyền máu</option>
-                <option value="Nhầm thuốc / Tai biến sử dụng thuốc">Nhầm thuốc / Tai biến sử dụng thuốc</option>
-                <option value="Dư hoặc thiếu thuốc, VTYT nghiêm trọng">Dư hoặc thiếu thuốc, VTYT nghiêm trọng</option>
-                <option value="Báo cáo sai sự thật / Gian lận hồ sơ">Báo cáo sai sự thật / Gian lận hồ sơ</option>
-              </select>
-            </div>
-            <div class="form-group" style="grid-column: 1 / -1;">
-              <label class="form-label" for="serious-violation-desc">Mô tả cụ thể sự việc vi phạm (Bắt buộc lập biên bản sự cố gửi BCN Khoa & Phòng Điều dưỡng) *</label>
-              <textarea id="serious-violation-desc" class="form-textarea" placeholder="Ghi nhận cụ thể thời điểm, buồng bệnh, nhân sự liên quan và hậu quả..."></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bảng kiểm 63 tiêu chuẩn con (5 Chặng) -->
-      <div id="criteria-stages-container">
-        <!-- Render tự động bởi inspection.js -->
-      </div>
-
-      <!-- Kế hoạch hành động & Khắc phục -->
-      <div class="card">
-        <div class="card-title">KẾ HOẠCH HÀNH ĐỘNG & KHẮC PHỤC SAI SÓT TẠI KHOA</div>
-        <div class="info-form-grid">
-          <div class="form-group" style="grid-column: 1 / -1;">
-            <label class="form-label" for="corrective-deficiencies">1. Tồn tại / Sai sót ghi nhận tại khoa (Tự động tổng hợp từ các tiêu chuẩn con Không đạt)</label>
-            <textarea id="corrective-deficiencies" class="form-textarea" rows="3" readonly style="background:var(--bg-muted);"></textarea>
-          </div>
-
-          <div class="form-group" style="grid-column: 1 / -1;">
-            <label class="form-label" for="corrective-measures">2. Biện pháp hành động / Khắc phục cụ thể *</label>
-            <textarea id="corrective-measures" class="form-textarea" rows="3" placeholder="Nhập các giải pháp cải tiến quy trình, tập huấn lại nhân sự..."></textarea>
-          </div>
-
-          <div class="row-time-nurse">
-            <div class="form-group">
-              <label class="form-label" for="corrective-person">Người chịu trách nhiệm chính</label>
-              <input type="text" id="corrective-person" class="form-input" placeholder="Họ tên người phụ trách..." />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="corrective-deadline">Thời hạn hoàn thành (dd.mm.yyyy)</label>
-              <input type="text" id="corrective-deadline" class="form-input" placeholder="Ví dụ: 30.10.2026" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TAB 2: DASHBOARD QUẢN TRỊ -->
-    <div id="tab-dashboard" class="tab-pane">
-      
-      <!-- KPI Cards -->
-      <div class="dashboard-kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-title">Tiến độ Giám sát Định kỳ</span>
-          <div id="kpi-progress" class="kpi-value">0 / 27 Khoa</div>
-        </div>
-
-        <div class="kpi-card">
-          <span class="kpi-title">Tỷ lệ Tuân thủ Trung bình</span>
-          <div id="kpi-avg-rate" class="kpi-value" style="color:var(--brand-primary);">0.0%</div>
-        </div>
-
-        <div class="kpi-card">
-          <span class="kpi-title">Phân bố Xếp loại Toàn viện</span>
-          <div id="kpi-rating-dist" class="kpi-value" style="font-size:15px; font-weight:700; line-height:1.4;">--</div>
-        </div>
-      </div>
-
-      <!-- Charts Grid -->
-      <div class="dashboard-charts-grid">
-        <div class="card">
-          <div class="card-title">BẢNG XẾP HẠNG TỶ LỆ TUÂN THỦ 27 KHOA (RANKING)</div>
-          <div style="height:480px; position:relative;">
-            <canvas id="chart-ranking"></canvas>
-          </div>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:24px;">
-          <div class="card">
-            <div class="card-title">PHÂN BỐ XẾP LOẠI TOÀN VIỆN</div>
-            <div style="height:220px; position:relative;">
-              <canvas id="chart-rating-dist"></canvas>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-title">TOP 5 TIÊU CHUẨN CON CÓ TỶ LỆ VI PHẠM CAO NHẤT</div>
-            <div style="height:220px; position:relative;">
-              <canvas id="chart-top-defects"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Overdue Actions Table -->
-      <div class="card">
-        <div class="card-title">DANH SÁCH KHOA CẦN CẢI TIẾN (+48H) / TÁI GIÁM SÁT (+3 ĐẾN 5 NGÀY)</div>
-        <div class="data-table-wrap">
-          <table class="data-table">
+        <!-- Bảng danh sách đợt kiểm tra trên Desktop -->
+        <div class="table-responsive desktop-archive-table">
+          <table class="archive-table">
             <thead>
               <tr>
-                <th>Khoa</th>
-                <th>Xếp loại</th>
-                <th>Thời điểm kiểm tra</th>
-                <th>Hạn hành động</th>
-                <th>Loại yêu cầu</th>
-              </tr>
-            </thead>
-            <tbody id="overdue-table-body">
-              <tr><td colspan="5" style="text-align:center; padding:16px;">Đang tải...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TAB 3: LỊCH SỬ & BÁO CÁO -->
-    <div id="tab-archive" class="tab-pane">
-      <div class="card">
-        <div class="card-title">
-          <span>DANH SÁCH TỔNG HỢP CÁC ĐỢT GIÁM SÁT</span>
-          <button type="button" class="btn-secondary" onclick="App.triggerBackup()" style="font-size:12px; padding:6px 14px;">
-            💾 Sao lưu Snapshot Database vào Drive
-          </button>
-        </div>
-
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Mã</th>
+                <th style="width:60px;">Mã #</th>
                 <th>Khoa giám sát</th>
-                <th>Kỳ kiểm tra</th>
+                <th>Kỳ</th>
                 <th>Thời gian</th>
-                <th>Điểm số & Tỷ lệ</th>
+                <th>ĐD Trưởng khoa</th>
+                <th>Tỷ lệ tuân thủ</th>
                 <th>Xếp loại</th>
                 <th>Trạng thái</th>
-                <th>Tác vụ xuất tệp</th>
+                <th style="text-align:right;">Tác vụ</th>
               </tr>
             </thead>
             <tbody id="archive-table-body">
-              <tr><td colspan="8" style="text-align:center; padding:24px;">Đang tải...</td></tr>
+              <tr><td colspan="9" style="text-align:center; padding:24px;">Đang tải dữ liệu...</td></tr>
             </tbody>
           </table>
         </div>
+
+        <!-- Danh sách thẻ trên Mobile (<1024px) -->
+        <div class="mobile-archive-list" id="mobile-archive-list">
+          <!-- Render danh sách thẻ trên mobile -->
+        </div>
+
       </div>
-    </div>
+
+    </section>
 
   </main>
 
-  <!-- Sticky Bottom Score Bar -->
-  <aside class="sticky-score-bar">
-    <div class="score-bar-container">
-      <div class="score-summary-wrap">
-        <div class="score-metric">
-          <span class="metric-label">Tổng điểm đạt</span>
-          <span id="score-bar-achieved" class="metric-value">0 / 100đ</span>
-        </div>
+  <!-- Mobile Bottom Tab Bar (<1024px, cố định đáy) -->
+  <nav class="mobile-bottom-tabs" id="mobile-bottom-tabs" role="tablist" aria-label="Điều hướng chính di động">
+    <button type="button" role="tab" class="mobile-tab active" data-tab="tab-inspection" aria-selected="true" id="mobile-tab-btn-inspection">
+      <span class="mobile-tab-icon" id="icon-mobile-tab-inspection"></span>
+      <span class="mobile-tab-label">Chấm điểm</span>
+    </button>
+    <button type="button" role="tab" class="mobile-tab" data-tab="tab-dashboard" aria-selected="false" id="mobile-tab-btn-dashboard">
+      <span class="mobile-tab-icon" id="icon-mobile-tab-dashboard"></span>
+      <span class="mobile-tab-label">Thống kê</span>
+    </button>
+    <button type="button" role="tab" class="mobile-tab" data-tab="tab-archive" aria-selected="false" id="mobile-tab-btn-archive">
+      <span class="mobile-tab-icon" id="icon-mobile-tab-archive"></span>
+      <span class="mobile-tab-label">Lịch sử</span>
+    </button>
+  </nav>
 
-        <div class="score-metric">
-          <span class="metric-label">Tỷ lệ tuân thủ</span>
-          <span id="score-bar-rate" class="metric-value" style="color:var(--brand-primary);">0.0%</span>
-        </div>
-
-        <div>
-          <span id="score-bar-rating" class="rating-badge dat">ĐẠT</span>
-        </div>
-
-        <div class="score-metric" style="display:flex; flex-direction:column; justify-content:center;">
-          <span class="metric-label">Chi tiết 63 tiêu chuẩn con</span>
-          <span id="score-bar-subcounts" style="font-size:12px; font-weight:700; color:var(--text-secondary); white-space:nowrap;">63 Đạt · 0 K.Đạt · 0 Không áp dụng</span>
-        </div>
-      </div>
-
-      <div class="score-bar-actions">
-        <button type="button" id="btn-save-draft" class="btn-secondary">💾 Lưu nháp</button>
-        <button type="button" id="btn-complete-inspection" class="btn-primary">✅ Hoàn tất kiểm tra</button>
-        <button type="button" id="btn-quick-export-docx" class="btn-secondary" style="display:none; color:var(--brand-primary);">📄 Xuất Word (.docx)</button>
-        <button type="button" id="btn-quick-export-pdf" class="btn-secondary" style="display:none; color:var(--status-danger);">📕 Xuất PDF (.pdf)</button>
+  <!-- App Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-text">
+        Biểu mẫu BK-GS-ĐD.01 · Lần BH: 02 (2026) · Bệnh viện Bình Dân
       </div>
     </div>
-  </aside>
+  </footer>
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>

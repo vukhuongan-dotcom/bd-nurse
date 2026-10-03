@@ -14,7 +14,7 @@ DB_DIR = Path.home() / "QualityAuditData"
 DB_PATH = DB_DIR / "quality_audit.db"
 
 # Vị trí thư mục Backup trong Google Drive
-BACKUP_DIR = Path("/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com/Drive của tôi/KHÁC/DAO/WEB KIỂM TRA CHẤT LƯỢNG KHOA/data/backup")
+BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", Path(__file__).resolve().parent.parent.parent / "data" / "backup"))
 MAX_BACKUP_FILES = 30
 
 

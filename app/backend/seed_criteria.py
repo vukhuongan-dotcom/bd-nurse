@@ -4,11 +4,13 @@ Seed Script for BD-NURSE Criteria (BK-GS-ĐD.01)
 Tuyệt đối không gõ tay, đảm bảo 100% khớp văn bản mẫu gốc.
 """
 
+import os
 import docx
 from pathlib import Path
 from database import get_connection, init_db
 
-TEMPLATE_PATH = Path("/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com/Drive của tôi/KHÁC/DAO/WEB KIỂM TRA CHẤT LƯỢNG KHOA/templates/BK-GS-DD.01_template.docx")
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent))
+TEMPLATE_PATH = PROJECT_ROOT / "templates" / "BK-GS-DD.01_template.docx"
 
 STAGE_MAP = {
     range(4, 17): ('Chặng I', 'TẠI BUỒNG BỆNH & TRỰC TIẾP TRÊN NGƯỜI BỆNH'),
