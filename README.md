@@ -29,7 +29,20 @@ source ~/.ag-venv/bin/activate
 python3 "/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com/Drive của tôi/KHÁC/DAO/WEB KIỂM TRA CHẤT LƯỢNG KHOA/scripts/start_app.py"
 ```
 
-👉 **Đường dẫn truy cập trực tiếp:** [http://127.0.0.1:8765](http://127.0.0.1:8765)
+👉 **Đường dẫn truy cập cục bộ:** [http://127.0.0.1:8765](http://127.0.0.1:8765)
+
+---
+
+### 🌐 TRIỂN KHAI TRỰC TUYẾN TRÊN INTERNET (1-CLICK DEPLOY VIA GITHUB)
+
+Hệ thống đã được đóng gói chuẩn hóa để chạy trực tiếp trên nền tảng đám mây Render thông qua GitHub Repository:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/vukhuongan-dotcom/bd-nurse)
+
+* **Repository:** [https://github.com/vukhuongan-dotcom/bd-nurse](https://github.com/vukhuongan-dotcom/bd-nurse)
+* **Tự động hóa:** Tự động build và chạy qua `render.yaml`, `Procfile` và `scripts/start_cloud.py`.
+* **Dữ liệu nền tảng:** Tự động tạo bảng và nạp 27 khoa viện cùng 63 tiêu chuẩn ngay trong lần khởi động đầu tiên.
+* **Bảo mật:** Cung cấp chứng chỉ SSL HTTPS miễn phí cho mọi thiết bị di động truy cập từ xa.
 
 ---
 
