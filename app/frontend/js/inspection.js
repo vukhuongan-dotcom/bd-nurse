@@ -423,7 +423,12 @@ const InspectionForm = {
                 </div>
                 <div class="criterion-score-badge-wrap">
                   <span class="criterion-score-chip" title="Điểm chuẩn">${formatScore(crit.diem)}đ</span>
-                  <span class="criterion-actual-chip status-achieved" id="crit-actual-chip-${crit.id}" title="Điểm thực tế">${formatScore(crit.diem)}đ</span>
+                  <select class="criterion-actual-select criterion-actual-chip status-achieved" id="crit-actual-chip-${crit.id}"
+                          title="Cuộn để chọn điểm thực tế"
+                          aria-label="Chọn điểm thực tế tiêu chuẩn ${itemNumber}"
+                          onchange="InspectionForm.onCriterionScoreChange(${crit.id}, this.value)">
+                    ${this.generateScoreOptions(crit.diem, crit.diem, false)}
+                  </select>
                   <button type="button" class="note-icon-btn" id="btn-note-toggle-${crit.id}" title="Ghi chú" onclick="InspectionForm.toggleCriterionNoteBox(${crit.id})">
                     ${Icons.edit('icon-xs')}
                   </button>
@@ -593,7 +598,69 @@ const InspectionForm = {
     this.updateMetaSummaryBadge();
   },
 
-  setCriterionStatus(criterionId, newStatus) {
+  generateScoreOptions(maxScore, currentScore, isNa) {
+    const valuesSet = new Set();
+    
+    // Thêm các mốc 0.25 (phổ biến nhất trong chấm kiểm tra y tế bệnh viện)
+    for (let s = maxScore; s >= -0.001; s -= 0.25) {
+      valuesSet.add(Math.round(s * 100) / 100);
+    }
+    
+    // Thêm các mốc 0.10 (phục vụ barem chấm lẻ)
+    for (let s = maxScore; s >= -0.001; s -= 0.10) {
+      valuesSet.add(Math.round(s * 100) / 100);
+    }
+
+    valuesSet.add(0.00);
+
+    // Đảm bảo điểm số hiện tại luôn có trong danh sách
+    if (typeof currentScore === 'number' && !isNaN(currentScore) && currentScore >= 0 && currentScore <= maxScore) {
+      valuesSet.add(Math.round(currentScore * 100) / 100);
+    }
+
+    const sortedVals = Array.from(valuesSet).sort((a, b) => b - a);
+
+    let html = '';
+    if (isNa) {
+      html += `<option value="NA" selected>— (KAP)</option>`;
+    }
+
+    sortedVals.forEach(val => {
+      const isSelected = !isNa && Math.abs(val - currentScore) < 0.005;
+      const valStr = val.toFixed(2);
+      const displayScore = `${valStr.replace('.', ',')}đ`;
+      const label = val >= maxScore ? `${displayScore} (Đạt)` : `${displayScore} (Không đạt)`;
+      html += `<option value="${valStr}" ${isSelected ? 'selected' : ''}>${label}</option>`;
+    });
+
+    if (!isNa) {
+      html += `<option value="NA">— (KAP)</option>`;
+    }
+
+    return html;
+  },
+
+  onCriterionScoreChange(criterionId, selectedValue) {
+    const crit = this.criteria.find(c => c.id === criterionId);
+    if (!crit) return;
+
+    if (selectedValue === 'NA') {
+      this.setCriterionStatus(criterionId, 'NA');
+      return;
+    }
+
+    const score = parseFloat(selectedValue);
+    if (isNaN(score)) return;
+
+    // Quy tắc: điểm tối đa thì tiêu chuẩn đó đạt, còn thấp hơn điểm chuẩn là không đạt
+    if (score >= crit.diem) {
+      this.setCriterionStatus(criterionId, 'ACHIEVED', crit.diem);
+    } else {
+      this.setCriterionStatus(criterionId, 'FAILED', score);
+    }
+  },
+
+  setCriterionStatus(criterionId, newStatus, customScore = null) {
     const crit = this.criteria.find(c => c.id === criterionId);
     if (!crit) return;
 
@@ -604,12 +671,16 @@ const InspectionForm = {
     const state = this.scoresState[criterionId];
     state.status = newStatus;
 
-    if (newStatus === 'ACHIEVED') {
-      state.awarded_score = crit.diem;
-    } else if (newStatus === 'FAILED') {
-      state.awarded_score = 0;
-    } else if (newStatus === 'NA') {
-      state.awarded_score = 0;
+    if (customScore !== null && typeof customScore === 'number' && !isNaN(customScore)) {
+      state.awarded_score = Math.round(customScore * 100) / 100;
+    } else {
+      if (newStatus === 'ACHIEVED') {
+        state.awarded_score = crit.diem;
+      } else if (newStatus === 'FAILED') {
+        state.awarded_score = 0.0;
+      } else if (newStatus === 'NA') {
+        state.awarded_score = 0.0;
+      }
     }
 
     this.updateCriterionUI(criterionId);
@@ -670,18 +741,34 @@ const InspectionForm = {
       noteInput.value = state.defect_note;
     }
 
-    // Cập nhật chip Điểm thực tế thời gian thực
+    // Cập nhật ô cuộn chọn / chip Điểm thực tế thời gian thực
     const actualChip = document.getElementById(`crit-actual-chip-${criterionId}`);
     if (actualChip) {
-      if (state.status === 'ACHIEVED') {
-        actualChip.textContent = `${formatScore(crit.diem)}đ`;
-        actualChip.className = 'criterion-actual-chip status-achieved';
-      } else if (state.status === 'FAILED') {
-        actualChip.textContent = '0,00đ';
-        actualChip.className = 'criterion-actual-chip status-failed';
-      } else if (state.status === 'NA') {
-        actualChip.textContent = '—';
-        actualChip.className = 'criterion-actual-chip status-na';
+      if (actualChip.tagName === 'SELECT') {
+        const isNa = state.status === 'NA';
+        const curScore = isNa ? 0.0 : (typeof state.awarded_score === 'number' ? state.awarded_score : (state.status === 'ACHIEVED' ? crit.diem : 0.0));
+        actualChip.innerHTML = this.generateScoreOptions(crit.diem, curScore, isNa);
+        if (isNa) {
+          actualChip.value = 'NA';
+          actualChip.className = 'criterion-actual-select criterion-actual-chip status-na';
+        } else if (state.status === 'ACHIEVED') {
+          actualChip.value = crit.diem.toFixed(2);
+          actualChip.className = 'criterion-actual-select criterion-actual-chip status-achieved';
+        } else {
+          actualChip.value = curScore.toFixed(2);
+          actualChip.className = 'criterion-actual-select criterion-actual-chip status-failed';
+        }
+      } else {
+        if (state.status === 'ACHIEVED') {
+          actualChip.textContent = `${formatScore(crit.diem)}đ`;
+          actualChip.className = 'criterion-actual-chip status-achieved';
+        } else if (state.status === 'FAILED') {
+          actualChip.textContent = `${formatScore(state.awarded_score || 0)}đ`;
+          actualChip.className = 'criterion-actual-chip status-failed';
+        } else if (state.status === 'NA') {
+          actualChip.textContent = '—';
+          actualChip.className = 'criterion-actual-chip status-na';
+        }
       }
     }
   },
@@ -783,16 +870,20 @@ const InspectionForm = {
             totalKap += c.diem;
             stgKap += c.diem;
             countNa++;
-          } else if (state.status === 'ACHIEVED') {
-            totalAchieved += state.awarded_score;
-            stgAchieved += state.awarded_score;
-            countAchieved++;
           } else {
-            countFailed++;
+            const aw = typeof state.awarded_score === 'number' ? state.awarded_score : 0;
+            totalAchieved += aw;
+            stgAchieved += aw;
+            if (state.status === 'ACHIEVED') {
+              countAchieved++;
+            } else {
+              countFailed++;
+            }
           }
         }
       });
 
+      stgAchieved = Math.round(stgAchieved * 100) / 100;
       const stgEffectiveDen = stg.points - stgKap;
       let stgRate = 0;
       if (stgEffectiveDen > 0) {
@@ -835,6 +926,7 @@ const InspectionForm = {
     });
 
     // 2. Tính tỷ lệ tuân thủ toàn viện
+    totalAchieved = Math.round(totalAchieved * 100) / 100;
     const effectiveDenominator = totalStandard - totalKap;
     let complianceRate = 0;
     if (effectiveDenominator > 0) {
@@ -993,7 +1085,8 @@ const InspectionForm = {
       const state = this.scoresState[c.id];
       if (state && state.status === 'FAILED') {
         const note = state.defect_note ? `: ${state.defect_note}` : '';
-        failedItems.push(`- Mục ${c.muc_stt} (${c.muc_ten}) [0,00/${formatScore(c.diem)}đ]${note}`);
+        const actualFormatted = formatScore(state.awarded_score || 0);
+        failedItems.push(`- Mục ${c.muc_stt} (${c.muc_ten}) [${actualFormatted}/${formatScore(c.diem)}đ]${note}`);
       }
     });
 
@@ -1070,7 +1163,7 @@ const InspectionForm = {
         if (state.status === 'ACHIEVED') {
           actualScoreStr = formatScore(crit.diem);
         } else if (state.status === 'FAILED') {
-          actualScoreStr = '0,00';
+          actualScoreStr = formatScore(state.awarded_score || 0);
         } else if (state.status === 'NA') {
           actualScoreStr = 'KAP';
           if (!noteStr) noteStr = 'Không áp dụng';
@@ -1269,10 +1362,11 @@ const InspectionForm = {
     // Chi tiết 63 dòng con
     const details = this.criteria.map(c => {
       const state = this.scoresState[c.id] || { status: 'ACHIEVED', awarded_score: c.diem, defect_note: '' };
+      const awardedVal = state.status === 'NA' ? 0.0 : (typeof state.awarded_score === 'number' ? state.awarded_score : (state.status === 'ACHIEVED' ? c.diem : 0.0));
       return {
         criterion_id: c.id,
         status: state.status,
-        awarded_score: state.status === 'ACHIEVED' ? c.diem : 0.0,
+        awarded_score: Math.round(awardedVal * 100) / 100,
         defect_note: state.defect_note || ''
       };
     });
@@ -1486,9 +1580,12 @@ const InspectionForm = {
       data.details.forEach(d => {
         const crit = this.criteria.find(c => c.id === d.criterion_id);
         const maxScore = crit ? crit.diem : 1;
+        const awarded = d.awarded_score !== undefined && d.awarded_score !== null
+          ? parseFloat(d.awarded_score)
+          : (d.status === 'ACHIEVED' ? maxScore : 0.0);
         this.scoresState[d.criterion_id] = {
           status: d.status,
-          awarded_score: d.status === 'ACHIEVED' ? maxScore : 0.0,
+          awarded_score: isNaN(awarded) ? (d.status === 'ACHIEVED' ? maxScore : 0.0) : awarded,
           defect_note: d.defect_note || ''
         };
         this.updateCriterionUI(d.criterion_id);

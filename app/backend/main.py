@@ -344,7 +344,8 @@ def update_inspection(round_id: int, payload: InspectionUpdateInput):
         for d in payload.details:
             scoring_items.append({
                 'status': d.status,
-                'max_score': criteria_map.get(d.criterion_id, 0)
+                'max_score': criteria_map.get(d.criterion_id, 0),
+                'awarded_score': d.awarded_score
             })
             
         is_serious = payload.is_serious_violation if payload.is_serious_violation is not None else bool(current['is_serious_violation'])
@@ -386,11 +387,18 @@ def update_inspection(round_id: int, payload: InspectionUpdateInput):
         # Cập nhật chi tiết
         c.execute("DELETE FROM inspection_details WHERE round_id = ?;", (round_id,))
         for d in payload.details:
-            awarded = criteria_map[d.criterion_id] if d.status == 'ACHIEVED' else 0
+            max_s = float(criteria_map.get(d.criterion_id, 0))
+            if d.status == 'NA':
+                status = 'NA'
+                awarded = 0.0
+            else:
+                awarded = d.awarded_score if d.awarded_score is not None else (max_s if d.status == 'ACHIEVED' else 0.0)
+                awarded = max(0.0, min(float(awarded), max_s))
+                status = 'ACHIEVED' if awarded >= max_s else 'FAILED'
             c.execute("""
             INSERT INTO inspection_details (round_id, criterion_id, status, awarded_score, defect_note)
             VALUES (?, ?, ?, ?, ?);
-            """, (round_id, d.criterion_id, d.status, awarded, d.defect_note or ''))
+            """, (round_id, d.criterion_id, status, awarded, d.defect_note or ''))
             
     # Cập nhật các trường thông tin chung
     updates = []

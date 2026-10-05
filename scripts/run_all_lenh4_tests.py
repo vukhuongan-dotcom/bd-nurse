@@ -121,23 +121,30 @@ async def run_all_tests():
             print(f"  Tổng số chip .criterion-actual-chip trên giao diện: {actual_chips_total} (Yêu cầu: 63)")
             assert actual_chips_total == 63, f"LỖI: Thiếu chip Điểm thực tế ({actual_chips_total}/63)"
             
+            async def get_chip_val_str(loc):
+                tag = await loc.evaluate("el => el.tagName")
+                if tag == "SELECT":
+                    val = await loc.input_value()
+                    return "—" if val == "NA" else f"{float(val):.2f}".replace('.', ',') + "đ"
+                return (await loc.inner_text()).strip()
+
             # 1. Bấm Không đạt mục 1
             await page_f.locator("#btn-fail-1").click()
-            chip_1_text = (await page_f.locator("#crit-actual-chip-1").inner_text()).strip()
+            chip_1_text = await get_chip_val_str(page_f.locator("#crit-actual-chip-1"))
             chip_1_class = await page_f.locator("#crit-actual-chip-1").get_attribute("class")
             print(f"  Sau khi bấm 'Không đạt' mục 1: Text = '{chip_1_text}', Class = '{chip_1_class}'")
             assert chip_1_text == "0,00đ" and "status-failed" in chip_1_class
             
             # 2. Bấm KAP mục 1
             await page_f.locator("#btn-na-1").click()
-            chip_1_text = (await page_f.locator("#crit-actual-chip-1").inner_text()).strip()
+            chip_1_text = await get_chip_val_str(page_f.locator("#crit-actual-chip-1"))
             chip_1_class = await page_f.locator("#crit-actual-chip-1").get_attribute("class")
             print(f"  Sau khi bấm 'KAP' mục 1:       Text = '{chip_1_text}', Class = '{chip_1_class}'")
             assert chip_1_text == "—" and "status-na" in chip_1_class
             
             # 3. Bấm Đạt mục 1
             await page_f.locator("#btn-pass-1").click()
-            chip_1_text = (await page_f.locator("#crit-actual-chip-1").inner_text()).strip()
+            chip_1_text = await get_chip_val_str(page_f.locator("#crit-actual-chip-1"))
             chip_1_class = await page_f.locator("#crit-actual-chip-1").get_attribute("class")
             print(f"  Sau khi bấm 'Đạt' mục 1:       Text = '{chip_1_text}', Class = '{chip_1_class}'")
             assert chip_1_text == "1,00đ" and "status-achieved" in chip_1_class
@@ -145,14 +152,14 @@ async def run_all_tests():
             # 4. Bấm 'KAP cả chặng' Chặng I
             stage1_na_btn = page_f.locator("#stage-section-ChặngI .btn-stage:has-text('KAP cả chặng')")
             await stage1_na_btn.click()
-            chip_1_text = (await page_f.locator("#crit-actual-chip-1").inner_text()).strip()
+            chip_1_text = await get_chip_val_str(page_f.locator("#crit-actual-chip-1"))
             print(f"  Sau khi bấm 'KAP cả chặng' Chặng I (mục 1): Text = '{chip_1_text}'")
             assert chip_1_text == "—"
             
             # 5. Bấm 'Đạt cả chặng' Chặng I
             stage1_full_btn = page_f.locator("#stage-section-ChặngI .btn-stage:has-text('Đạt cả chặng')")
             await stage1_full_btn.click()
-            chip_1_text = (await page_f.locator("#crit-actual-chip-1").inner_text()).strip()
+            chip_1_text = await get_chip_val_str(page_f.locator("#crit-actual-chip-1"))
             print(f"  Sau khi bấm 'Đạt cả chặng' Chặng I (mục 1): Text = '{chip_1_text}'")
             assert chip_1_text == "1,00đ"
             
