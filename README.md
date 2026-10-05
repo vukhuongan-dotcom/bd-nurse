@@ -33,16 +33,16 @@ python3 "/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com
 
 ---
 
-### 🌐 TRIỂN KHAI TRỰC TUYẾN TRÊN INTERNET (1-CLICK DEPLOY VIA GITHUB)
+### 🌐 TRANG WEB CHÍNH THỨC TRÊN GITHUB PAGES (MIỄN PHÍ 100% VĨNH VIỄN)
 
-Hệ thống đã được đóng gói chuẩn hóa để chạy trực tiếp trên nền tảng đám mây Render thông qua GitHub Repository:
+Hệ thống hoạt động trực tiếp trên nền tảng **GitHub Pages** (serverless tương tự dự án `idea-agent`):
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/vukhuongan-dotcom/bd-nurse)
+👉 **[https://vukhuongan-dotcom.github.io/bd-nurse/](https://vukhuongan-dotcom.github.io/bd-nurse/)**
 
 * **Repository:** [https://github.com/vukhuongan-dotcom/bd-nurse](https://github.com/vukhuongan-dotcom/bd-nurse)
-* **Tự động hóa:** Tự động build và chạy qua `render.yaml`, `Procfile` và `scripts/start_cloud.py`.
-* **Dữ liệu nền tảng:** Tự động tạo bảng và nạp 27 khoa viện cùng 63 tiêu chuẩn ngay trong lần khởi động đầu tiên.
-* **Bảo mật:** Cung cấp chứng chỉ SSL HTTPS miễn phí cho mọi thiết bị di động truy cập từ xa.
+* **Mô hình:** Chạy trực tiếp trên trình duyệt máy tính & điện thoại với Dual-Mode Runtime (tích hợp sẵn 27 khoa phòng, 63 tiêu chuẩn con, bộ chọn 30 ĐD Trưởng & 36 Giám sát viên).
+* **An toàn & Tiện lợi:** Lưu trữ nháp và lịch sử trên thiết bị (LocalStorage), hỗ trợ xuất tệp sao lưu JSON và in trực tiếp theo mẫu chuẩn `BK-GS-ĐD.01`.
+* **Zero Server Cost:** Miễn phí 100% vĩnh viễn, không cần duy trì máy chủ hay phần mềm trung gian.
 
 ---
 
