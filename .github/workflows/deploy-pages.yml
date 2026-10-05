@@ -26,9 +26,22 @@ jobs:
 
       - name: Prepare Static Site
         run: |
-          mkdir -p _site/static
-          cp -R app/frontend/* _site/
-          cp -R app/static/* _site/static/
+          mkdir -p _site/static/css _site/static/js _site/static/brand _site/static/vendor
+          # Copy frontend root files (index.html)
+          cp app/frontend/index.html _site/
+          # Copy css, js, vendor into both root and static/ for bulletproof resolution
+          cp -R app/frontend/css _site/
+          cp -R app/frontend/js _site/
+          cp -R app/frontend/vendor _site/
+          cp -R app/frontend/css/* _site/static/css/
+          cp -R app/frontend/js/* _site/static/js/
+          cp -R app/frontend/vendor/* _site/static/vendor/
+          # Copy brand assets into both root/brand and static/brand
+          mkdir -p _site/brand
+          cp -R app/static/brand/* _site/brand/
+          cp -R app/static/brand/* _site/static/brand/
+          # Disable Jekyll so hidden files and vendor aren't skipped
+          touch _site/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -11,22 +11,119 @@ const Dashboard = {
 
   // ==================== 1. PHÂN HỆ THỐNG KÊ (DASHBOARD) ====================
   async loadStats() {
-    try {
-      let url = `/api/stats/dashboard?year=${App.currentYear}`;
-      if (App.currentQuarter) url += `&quarter=${App.currentQuarter}`;
+    const isStaticHost = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
+    if (!isStaticHost) {
+      try {
+        let url = `/api/stats/dashboard?year=${App.currentYear}`;
+        if (App.currentQuarter) url += `&quarter=${App.currentQuarter}`;
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Không thể nạp dữ liệu thống kê');
-      const data = await res.json();
-      this.dashboardData = data;
-
-      this.renderKPIs(data);
-      this.renderRankingBars(data.ranking || []);
-      this.renderStackedRatingBar(data.rating_distribution || {});
-      this.renderTopDefects(data.top_defects || []);
-    } catch (e) {
-      App.showToast(`Lỗi nạp thống kê: ${e.message}`, 'error');
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          this.dashboardData = data;
+          this.renderKPIs(data);
+          this.renderRankingBars(data.ranking || []);
+          this.renderStackedRatingBar(data.rating_distribution || {});
+          this.renderTopDefects(data.top_defects || []);
+          return;
+        }
+      } catch (e) {}
     }
+
+    // Offline / Standalone Fallback
+    const data = this.calculateLocalStats();
+    this.dashboardData = data;
+    this.renderKPIs(data);
+    this.renderRankingBars(data.ranking || []);
+    this.renderStackedRatingBar(data.rating_distribution || {});
+    this.renderTopDefects(data.top_defects || []);
+  },
+
+  calculateLocalStats() {
+    let localList = [];
+    try {
+      localList = JSON.parse(localStorage.getItem('bd_nurse_inspections') || '[]');
+    } catch (e) { localList = []; }
+
+    const filtered = localList.filter(r => {
+      if (r.year && r.year !== App.currentYear) return false;
+      if (App.currentQuarter && r.quarter && r.quarter !== App.currentQuarter) return false;
+      return true;
+    });
+
+    const depts = (App.departments && App.departments.length > 0) ? App.departments : (window.WINDOW_DEPARTMENTS_DATA || []);
+    const totalDepts = depts.length || 27;
+
+    const latestByDept = new Map();
+    filtered.forEach(r => {
+      if (!latestByDept.has(r.department_id)) {
+        latestByDept.set(r.department_id, r);
+      }
+    });
+
+    const completed = Array.from(latestByDept.values()).filter(r => r.trang_thai === 'hoan_tat');
+    const inspectedCount = completed.length;
+    const progressRate = totalDepts > 0 ? (inspectedCount / totalDepts * 100) : 0;
+
+    let sumCompliance = 0;
+    const ratingDist = { tot: 0, dat: 0, can_cai_tien: 0, khong_dat: 0 };
+    const ranking = [];
+
+    completed.forEach(r => {
+      sumCompliance += (r.compliance_rate || 0);
+      const code = r.rating_code || 'dat';
+      if (ratingDist[code] !== undefined) ratingDist[code]++;
+      ranking.push({
+        department_id: r.department_id,
+        compliance_rate: r.compliance_rate,
+        total_score: r.total_score,
+        rating: r.rating,
+        rating_code: r.rating_code
+      });
+    });
+
+    const avgCompliance = inspectedCount > 0 ? (sumCompliance / inspectedCount) : 0;
+
+    const defectMap = new Map();
+    filtered.forEach(r => {
+      (r.details || []).forEach(d => {
+        if (d.status === 'FAILED') {
+          const count = defectMap.get(d.criterion_id) || 0;
+          defectMap.set(d.criterion_id, count + 1);
+        }
+      });
+    });
+
+    const criteriaList = (App.criteria && App.criteria.length > 0) ? App.criteria : (window.WINDOW_CRITERIA_DATA || []);
+    const topDefects = Array.from(defectMap.entries())
+      .map(([critId, failCount]) => {
+        const crit = criteriaList.find(c => c.id === critId);
+        return {
+          id: critId,
+          content: crit ? crit.content : `Tiêu chuẩn #${critId}`,
+          stage: crit ? crit.stage : '',
+          failed_count: failCount,
+          applied_count: filtered.length,
+          failed_rate: filtered.length > 0 ? Math.round((failCount / filtered.length) * 1000) / 10 : 0
+        };
+      })
+      .sort((a, b) => b.failed_count - a.failed_count)
+      .slice(0, 5);
+
+    const overdueActions = completed.filter(r => r.rating_code === 'can_cai_tien' || r.rating_code === 'khong_dat');
+
+    return {
+      year: App.currentYear,
+      quarter: App.currentQuarter,
+      total_departments: totalDepts,
+      inspected_departments: inspectedCount,
+      progress_rate: progressRate,
+      average_compliance_rate: avgCompliance,
+      rating_distribution: ratingDist,
+      ranking: ranking,
+      top_defects: topDefects,
+      overdue_actions: overdueActions
+    };
   },
 
   renderKPIs(data) {
@@ -79,10 +176,15 @@ const Dashboard = {
     if (!App.departments || App.departments.length === 0) {
       try {
         const res = await fetch('/api/departments');
-        App.departments = await res.json();
-      } catch (e) {
-        container.innerHTML = '<div style="padding:16px; color:var(--ink-2); text-align:center;">Đang tải danh sách khoa...</div>';
-        return;
+        if (res.ok) App.departments = await res.json();
+      } catch (e) {}
+      if (!App.departments || App.departments.length === 0) {
+        if (window.WINDOW_DEPARTMENTS_DATA) {
+          App.departments = window.WINDOW_DEPARTMENTS_DATA;
+        } else {
+          container.innerHTML = '<div style="padding:16px; color:var(--ink-2); text-align:center;">Đang tải danh sách khoa...</div>';
+          return;
+        }
       }
     }
 
@@ -224,22 +326,34 @@ const Dashboard = {
     if (tableBody) tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--ink-2);">Đang tải danh sách...</td></tr>';
     if (mobileList) mobileList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--ink-2);">Đang tải danh sách...</div>';
 
-    try {
-      let url = `/api/inspections?year=${App.currentYear}`;
-      if (App.currentQuarter) url += `&quarter=${App.currentQuarter}`;
+    let data = null;
+    const isStaticHost = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
+    if (!isStaticHost) {
+      try {
+        let url = `/api/inspections?year=${App.currentYear}`;
+        if (App.currentQuarter) url += `&quarter=${App.currentQuarter}`;
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Không thể tải lịch sử kiểm tra');
-      const data = await res.json();
-      this.archiveData = data;
-
-      this.filterArchiveTable();
-    } catch (e) {
-      if (tableBody) {
-        tableBody.innerHTML = `<tr><td colspan="9" style="color:var(--status-danger); text-align:center; padding:24px;">Lỗi tải lịch sử: ${e.message}</td></tr>`;
-      }
-      App.showToast(`Lỗi: ${e.message}`, 'error');
+        const res = await fetch(url);
+        if (res.ok) data = await res.json();
+      } catch (e) {}
     }
+
+    if (!data) {
+      // Fallback: LocalStorage
+      let localList = [];
+      try {
+        localList = JSON.parse(localStorage.getItem('bd_nurse_inspections') || '[]');
+      } catch (e) { localList = []; }
+
+      data = localList.filter(r => {
+        if (r.year && r.year !== App.currentYear) return false;
+        if (App.currentQuarter && r.quarter && r.quarter !== App.currentQuarter) return false;
+        return true;
+      });
+    }
+
+    this.archiveData = data;
+    this.filterArchiveTable();
   },
 
   renderArchive(items) {
@@ -411,15 +525,22 @@ const Dashboard = {
 
     try {
       const res = await fetch(`/api/inspections/${roundId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Không thể xóa');
+      if (res.ok) {
+        App.showToast(`Đã xóa thành công đợt kiểm tra #${roundId}`, 'success');
+        this.loadArchiveList();
+        if (this.dashboardData) this.loadStats();
+        return;
       }
-      App.showToast(`Đã xóa thành công đợt kiểm tra #${roundId}`, 'success');
+    } catch (e) {}
+
+    // Fallback: Delete from localStorage
+    try {
+      let localList = JSON.parse(localStorage.getItem('bd_nurse_inspections') || '[]');
+      localList = localList.filter(r => r.id != roundId);
+      localStorage.setItem('bd_nurse_inspections', JSON.stringify(localList));
+      App.showToast(`Đã xóa đợt kiểm tra #${roundId}`, 'success');
       this.loadArchiveList();
-      if (this.dashboardData) {
-        this.loadStats();
-      }
+      if (this.dashboardData) this.loadStats();
     } catch (e) {
       App.showToast(`Lỗi: ${e.message}`, 'error');
     }

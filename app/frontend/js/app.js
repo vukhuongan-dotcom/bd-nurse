@@ -117,8 +117,8 @@ const App = {
     const wordmarkEl = document.getElementById('app-logo-wordmark');
     if (wordmarkEl) {
       wordmarkEl.src = theme === 'dark'
-        ? '/static/brand/indigo/nurse-wordmark-dark.svg'
-        : '/static/brand/indigo/nurse-wordmark-light.svg';
+        ? './static/brand/indigo/nurse-wordmark-dark.svg'
+        : './static/brand/indigo/nurse-wordmark-light.svg';
     }
   },
 
@@ -227,17 +227,29 @@ const App = {
   },
 
   async loadInitialData() {
-    try {
-      const [deptRes, critRes] = await Promise.all([
-        fetch('/api/departments'),
-        fetch('/api/criteria')
-      ]);
-      this.departments = await deptRes.json();
-      this.criteria = await critRes.json();
+    const isStaticHost = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
+    if (!isStaticHost) {
+      try {
+        const [deptRes, critRes] = await Promise.all([
+          fetch('/api/departments'),
+          fetch('/api/criteria')
+        ]);
+        if (deptRes.ok && critRes.ok) {
+          this.departments = await deptRes.json();
+          this.criteria = await critRes.json();
+          InspectionForm.init(this.departments, this.criteria);
+          return;
+        }
+      } catch (e) {}
+    }
 
+    if (window.WINDOW_DEPARTMENTS_DATA && window.WINDOW_CRITERIA_DATA) {
+      this.departments = window.WINDOW_DEPARTMENTS_DATA;
+      this.criteria = window.WINDOW_CRITERIA_DATA;
       InspectionForm.init(this.departments, this.criteria);
-    } catch (e) {
-      this.showToast(`Lỗi kết nối máy chủ: ${e.message}`, 'error');
+      console.info('BD-NURSE running in Client-Side Standalone Mode');
+    } else {
+      this.showToast('Không thể nạp dữ liệu tiêu chuẩn', 'error');
     }
   },
 
@@ -247,12 +259,20 @@ const App = {
       if (res.ok) {
         const data = await res.json();
         this.showToast(data.message || 'Đã sao lưu cơ sở dữ liệu an toàn vào Drive', 'success');
-      } else {
-        this.showToast('Hệ thống tự động sao lưu snapshot SQLite an toàn vào thư mục backups', 'info');
+        return;
       }
     } catch (e) {
-      this.showToast('Hệ thống tự động sao lưu snapshot SQLite an toàn vào thư mục backups', 'info');
+      // Fallback: Client-side JSON backup
     }
+    const localData = localStorage.getItem('bd_nurse_inspections') || '[]';
+    const blob = new Blob([localData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bd_nurse_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Đã tải tệp sao lưu dữ liệu JSON về máy', 'success');
   },
 
   showToast(message, type = 'info') {

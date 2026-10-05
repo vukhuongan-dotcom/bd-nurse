@@ -45,3 +45,4 @@ exports/pdf/*
 # Local Backups & Scratch
 scratch/
 app/frontend_backup_20261003/
+_site/

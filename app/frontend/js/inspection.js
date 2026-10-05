@@ -876,6 +876,19 @@ const InspectionForm = {
 
     // 5. Cập nhật Danh sách Không đạt (Interactive Defect Links)
     this.renderDefectsList();
+
+    return {
+      achieved: totalAchieved,
+      max: effectiveDenominator,
+      rate: complianceRate,
+      rating: rating,
+      rating_code: ratingCode,
+      failed_count: countFailed
+    };
+  },
+
+  calculateCompliance() {
+    return this.recalculateScores();
   },
 
   renderDefectsList() {
@@ -998,40 +1011,104 @@ const InspectionForm = {
       }
     };
 
+    const isStaticHost = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
+    if (!isStaticHost) {
+      try {
+        let res;
+        if (this.currentRoundId && typeof this.currentRoundId === 'number' && this.currentRoundId < 1000000000000) {
+          res = await fetch(`/api/inspections/${this.currentRoundId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/inspections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (res && res.ok) {
+          const data = await res.json();
+          this.currentRoundId = data.id || data.round_id || this.currentRoundId;
+          this.updateExportButtonsState(true);
+
+          if (targetStatus === 'hoan_tat') {
+            const rText = data.rating || document.getElementById('desktop-rating-text')?.textContent || 'Đạt';
+            App.showToast(`Đã hoàn tất đợt kiểm tra #${this.currentRoundId}! Xếp loại: ${rText}`, 'success');
+          } else {
+            App.showToast(`Đã lưu nháp đợt kiểm tra #${this.currentRoundId}`, 'info');
+          }
+          return;
+        }
+      } catch (e) {
+        // Offline / GitHub Pages fallback below
+      }
+    }
+
+    // Save locally to localStorage
     try {
-      let res;
-      if (this.currentRoundId) {
-        res = await fetch(`/api/inspections/${this.currentRoundId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+      const dept = this.departments.find(d => d.id == payload.department_id);
+      const calculated = this.calculateCompliance();
+      const rText = document.getElementById('desktop-rating-text')?.textContent || 'Đạt';
+      let roundId = this.currentRoundId || Date.now();
+      this.currentRoundId = roundId;
+
+      let localList = [];
+      try {
+        localList = JSON.parse(localStorage.getItem('bd_nurse_inspections') || '[]');
+      } catch (err) { localList = []; }
+
+      const record = {
+        id: roundId,
+        department_id: payload.department_id,
+        dept_name: dept ? dept.name : 'Khoa được giám sát',
+        dept_block: dept ? dept.block : '',
+        loai_dot: payload.loai_dot,
+        year: App.currentYear,
+        quarter: App.currentQuarter,
+        inspection_time: payload.inspection_time,
+        head_nurse: payload.head_nurse,
+        inspectors: payload.inspectors,
+        trang_thai: targetStatus,
+        rating: rText,
+        rating_code: this.getRatingCode(rText),
+        compliance_rate: calculated.rate,
+        total_score: calculated.achieved,
+        max_score: calculated.max,
+        is_serious_violation: payload.is_serious_violation,
+        serious_violation_desc: payload.serious_violation_desc,
+        details: payload.details,
+        corrective_plan: payload.corrective_plan,
+        updated_at: new Date().toISOString()
+      };
+
+      const existingIdx = localList.findIndex(r => r.id === roundId);
+      if (existingIdx >= 0) {
+        localList[existingIdx] = record;
       } else {
-        res = await fetch('/api/inspections', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        localList.unshift(record);
       }
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Lỗi lưu đợt kiểm tra');
-      }
-
-      const data = await res.json();
-      this.currentRoundId = data.id || data.round_id || this.currentRoundId;
-
+      localStorage.setItem('bd_nurse_inspections', JSON.stringify(localList));
       this.updateExportButtonsState(true);
 
       if (targetStatus === 'hoan_tat') {
-        const rText = data.rating || document.getElementById('desktop-rating-text')?.textContent || 'Đạt'; App.showToast(`Đã hoàn tất đợt kiểm tra #${this.currentRoundId}! Xếp loại: ${rText}`, 'success');
+        App.showToast(`Đã hoàn tất đợt kiểm tra #${this.currentRoundId}! Xếp loại: ${rText}`, 'success');
       } else {
         App.showToast(`Đã lưu nháp đợt kiểm tra #${this.currentRoundId}`, 'info');
       }
     } catch (e) {
       App.showToast(`Lỗi: ${e.message}`, 'error');
     }
+  },
+
+  getRatingCode(rText) {
+    const s = (rText || '').toLowerCase();
+    if (s.includes('tốt')) return 'tot';
+    if (s.includes('không đạt')) return 'khong_dat';
+    if (s.includes('cải tiến')) return 'can_cai_tien';
+    return 'dat';
   },
 
   updateExportButtonsState(enabled) {
@@ -1054,14 +1131,22 @@ const InspectionForm = {
       App.showToast('Vui lòng lưu đợt kiểm tra trước khi xuất tệp', 'error');
       return;
     }
-    window.open(`/api/inspections/${this.currentRoundId}/export-pdf`, '_blank');
+    window.print();
   },
 
   async loadExistingInspection(roundId) {
     try {
-      const res = await fetch(`/api/inspections/${roundId}`);
-      if (!res.ok) throw new Error('Không thể tải đợt kiểm tra');
-      const data = await res.json();
+      let data = null;
+      try {
+        const res = await fetch(`/api/inspections/${roundId}`);
+        if (res.ok) data = await res.json();
+      } catch (err) {}
+
+      if (!data) {
+        const localList = JSON.parse(localStorage.getItem('bd_nurse_inspections') || '[]');
+        data = localList.find(r => r.id == roundId);
+      }
+      if (!data) throw new Error('Không thể tải đợt kiểm tra');
 
       this.currentRoundId = data.id;
       App.switchTab('tab-inspection');
