@@ -397,8 +397,9 @@ button, input, select, textarea {
 .card-caption {
   font-size: var(--text-xs);
   color: var(--ink-2);
-  margin-top: -12px;
+  margin-top: 4px;
   margin-bottom: 16px;
+  line-height: 1.5;
 }
 
 .card-tag {
@@ -796,6 +797,51 @@ details[open] .meta-summary-chevron {
   border-radius: var(--radius-full);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.criterion-actual-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  min-width: 40px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.criterion-actual-chip.status-achieved {
+  background-color: var(--tint);
+  color: var(--rating-dat-color);
+  border: 1px solid var(--accent);
+}
+
+.criterion-actual-chip.status-failed {
+  background-color: #fee2e2;
+  color: var(--rating-khong-dat-color);
+  border: 1px solid #fca5a5;
+}
+
+.criterion-actual-chip.status-na {
+  background-color: var(--bg);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+body.dark-theme .criterion-actual-chip.status-achieved {
+  background-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+body.dark-theme .criterion-actual-chip.status-failed {
+  background-color: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
 }
 
 /* Segmented 3-button control */
@@ -2470,4 +2516,256 @@ details[open] #icon-plan-chevron {
     min-height: 44px !important;
     padding-inline: 12px;
   }
+}
+
+/* Tự giãn textarea tồn tại theo nội dung, không có thanh cuộn */
+#corrective-deficiencies {
+  overflow-y: hidden;
+  resize: none;
+  min-height: 52px;
+  line-height: 1.5;
+}
+
+/* ==================== HIGH-FIDELITY PRINT STYLES (BK-GS-ĐD.01) ==================== */
+#print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 11pt !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Ẩn toàn bộ giao diện ứng dụng */
+  .app-header,
+  .app-main,
+  .mobile-bottom-tabs,
+  .app-footer,
+  #toast-container,
+  .modal-backdrop,
+  .modal-dialog,
+  #inspectors-picker-panel,
+  .mobile-bottom-sheet-backdrop,
+  .mobile-bottom-sheet,
+  .desktop-summary-panel,
+  .mobile-sticky-bar,
+  .stage-nav-bar {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Chỉ hiển thị duy nhất #print-sheet */
+  #print-sheet {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+
+  #print-sheet table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-family: "Times New Roman", Times, serif !important;
+    color: #000000 !important;
+  }
+
+  #print-sheet th,
+  #print-sheet td {
+    font-family: "Times New Roman", Times, serif !important;
+    color: #000000 !important;
+  }
+
+  /* Bảng tiêu chuẩn con */
+  .print-criteria-table {
+    margin-bottom: 12px !important;
+    font-size: 10pt !important;
+  }
+
+  .print-criteria-table th,
+  .print-criteria-table td {
+    border: 1px solid #000000 !important;
+    padding: 4px 6px !important;
+    vertical-align: middle !important;
+  }
+
+  .print-criteria-table thead {
+    display: table-header-group !important;
+  }
+
+  .print-criteria-table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-header-grid {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 14px !important;
+    font-size: 11pt !important;
+  }
+
+  .print-header-left {
+    text-align: left !important;
+    line-height: 1.3 !important;
+  }
+
+  .print-header-right {
+    text-align: right !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+  }
+
+  .print-subhead-bold {
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-title-block {
+    text-align: center !important;
+    margin-bottom: 12px !important;
+  }
+
+  .print-doc-title {
+    font-size: 13pt !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    margin: 0 0 4px 0 !important;
+    color: #000000 !important;
+  }
+
+  .print-doc-subtitle {
+    font-size: 10.5pt !important;
+    font-style: italic !important;
+    margin-bottom: 4px !important;
+  }
+
+  .print-doc-formula {
+    font-size: 9.5pt !important;
+    font-style: italic !important;
+  }
+
+  .print-meta-table {
+    margin-bottom: 12px !important;
+    font-size: 10.5pt !important;
+  }
+
+  .print-meta-table td {
+    border: 1px solid #000000 !important;
+    padding: 5px 8px !important;
+  }
+
+  .print-inspectors-col {
+    margin-top: 2px !important;
+    line-height: 1.35 !important;
+  }
+
+  .print-stage-header-row td {
+    background-color: #f2f2f2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-weight: bold !important;
+    text-align: left !important;
+    padding: 5px 8px !important;
+  }
+
+  .print-total-row td {
+    background-color: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-weight: bold !important;
+    padding: 6px 8px !important;
+  }
+
+  .print-plan-table {
+    margin-bottom: 14px !important;
+    font-size: 10pt !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-plan-table th,
+  .print-plan-table td {
+    border: 1px solid #000000 !important;
+    padding: 6px 8px !important;
+  }
+
+  .print-plan-table th {
+    background-color: #f2f2f2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-weight: bold !important;
+    text-align: left !important;
+  }
+
+  .print-plan-cell {
+    vertical-align: top !important;
+    line-height: 1.4 !important;
+  }
+
+  .print-plan-line {
+    margin-bottom: 4px !important;
+  }
+
+  .print-signatures-block {
+    margin-top: 14px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-signatures-table {
+    border: none !important;
+  }
+
+  .print-signatures-table th,
+  .print-signatures-table td {
+    border: none !important;
+    text-align: center !important;
+    vertical-align: top !important;
+    padding: 4px 6px !important;
+  }
+
+  .print-signatures-table th {
+    font-size: 10.5pt !important;
+    font-weight: bold !important;
+  }
+
+  .print-sig-sub {
+    font-size: 9.5pt !important;
+    font-weight: normal !important;
+    font-style: italic !important;
+    display: inline-block !important;
+    margin-top: 2px !important;
+  }
+
+  .print-sig-space {
+    height: 60px !important;
+  }
+
+  .print-sig-names {
+    font-size: 10.5pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .print-cell-center { text-align: center !important; }
+  .print-cell-left { text-align: left !important; }
+  .print-cell-right { text-align: right !important; }
+  .print-cell-bold { font-weight: bold !important; }
 }

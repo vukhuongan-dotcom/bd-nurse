@@ -114,6 +114,7 @@ const InspectionForm = {
     this.initInspectorsPicker();
     this.renderCriteriaStages();
     this.setupDateTimeSync();
+    this.initCorrectiveListeners();
     this.resetForm();
     this.startAutoSave();
   },
@@ -155,6 +156,25 @@ const InspectionForm = {
         }
       });
     }
+  },
+
+  initCorrectiveListeners() {
+    const defEl = document.getElementById('corrective-deficiencies');
+    if (defEl) {
+      defEl.addEventListener('input', () => {
+        this.autoResizeDeficiencies();
+        this.populatePrintSheet();
+      });
+    }
+    const measuresEl = document.getElementById('corrective-measures');
+    if (measuresEl) {
+      measuresEl.addEventListener('input', () => this.populatePrintSheet());
+    }
+    const deadlineEl = document.getElementById('corrective-deadline');
+    if (deadlineEl) {
+      deadlineEl.addEventListener('input', () => this.populatePrintSheet());
+    }
+    window.addEventListener('beforeprint', () => this.populatePrintSheet());
   },
 
   updateMetaSummaryBadge() {
@@ -271,14 +291,28 @@ const InspectionForm = {
 
   removeInspector(name) {
     const checkboxes = document.querySelectorAll('.inspector-checkbox');
+    let found = false;
     checkboxes.forEach(cb => {
       if (cb.value === name) {
         cb.checked = false;
+        found = true;
         const item = cb.closest('.inspector-item');
         if (item) item.classList.remove('selected');
       }
     });
-    this.updateInspectorsFromCheckboxes();
+    if (found) {
+      this.updateInspectorsFromCheckboxes();
+    } else {
+      const textarea = document.getElementById('inspect-inspectors');
+      if (textarea) {
+        const remaining = (textarea.value || '')
+          .split(/[\n,;]+/)
+          .map(l => l.replace(/^\d+[\.\s\-\)]*/, '').trim())
+          .filter(l => l && l !== name);
+        textarea.value = remaining.join('\n');
+        this.renderSelectedInspectorChips(remaining);
+      }
+    }
   },
 
   clearAllInspectors() {
@@ -295,11 +329,15 @@ const InspectionForm = {
     const textarea = document.getElementById('inspect-inspectors');
     if (!textarea) return;
 
-    const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
+    const rawVal = textarea.value || '';
+    const lines = rawVal
+      .split(/[\n,;]+/)
+      .map(l => l.replace(/^\d+[\.\s\-\)]*/, '').trim())
+      .filter(Boolean);
+
     const checkboxes = document.querySelectorAll('.inspector-checkbox');
-    
     checkboxes.forEach(cb => {
-      const isChecked = lines.some(line => line.includes(cb.value) || cb.value.includes(line));
+      const isChecked = lines.some(line => line.toLowerCase() === cb.value.toLowerCase() || line.includes(cb.value) || cb.value.includes(line));
       cb.checked = isChecked;
       const item = cb.closest('.inspector-item');
       if (item) item.classList.toggle('selected', isChecked);
@@ -384,7 +422,8 @@ const InspectionForm = {
                   <div class="criterion-desc">${crit.noi_dung}</div>
                 </div>
                 <div class="criterion-score-badge-wrap">
-                  <span class="criterion-score-chip">${formatScore(crit.diem)}đ</span>
+                  <span class="criterion-score-chip" title="Điểm chuẩn">${formatScore(crit.diem)}đ</span>
+                  <span class="criterion-actual-chip status-achieved" id="crit-actual-chip-${crit.id}" title="Điểm thực tế">${formatScore(crit.diem)}đ</span>
                   <button type="button" class="note-icon-btn" id="btn-note-toggle-${crit.id}" title="Ghi chú" onclick="InspectionForm.toggleCriterionNoteBox(${crit.id})">
                     ${Icons.edit('icon-xs')}
                   </button>
@@ -629,6 +668,21 @@ const InspectionForm = {
 
     if (noteInput && state.defect_note !== undefined && noteInput.value !== state.defect_note) {
       noteInput.value = state.defect_note;
+    }
+
+    // Cập nhật chip Điểm thực tế thời gian thực
+    const actualChip = document.getElementById(`crit-actual-chip-${criterionId}`);
+    if (actualChip) {
+      if (state.status === 'ACHIEVED') {
+        actualChip.textContent = `${formatScore(crit.diem)}đ`;
+        actualChip.className = 'criterion-actual-chip status-achieved';
+      } else if (state.status === 'FAILED') {
+        actualChip.textContent = '0,00đ';
+        actualChip.className = 'criterion-actual-chip status-failed';
+      } else if (state.status === 'NA') {
+        actualChip.textContent = '—';
+        actualChip.className = 'criterion-actual-chip status-na';
+      }
     }
   },
 
@@ -877,7 +931,7 @@ const InspectionForm = {
     // 5. Cập nhật Danh sách Không đạt (Interactive Defect Links)
     this.renderDefectsList();
 
-    return {
+    const result = {
       achieved: totalAchieved,
       max: effectiveDenominator,
       rate: complianceRate,
@@ -885,9 +939,15 @@ const InspectionForm = {
       rating_code: ratingCode,
       failed_count: countFailed
     };
+    this.lastCalculatedScores = result;
+    this.populatePrintSheet();
+    return result;
   },
 
   calculateCompliance() {
+    if (this.lastCalculatedScores) {
+      return this.lastCalculatedScores;
+    }
     return this.recalculateScores();
   },
 
@@ -942,6 +1002,233 @@ const InspectionForm = {
     } else {
       listEl.value = '- Không có tồn tại ghi nhận (Đạt chuẩn toàn bộ).';
     }
+    this.autoResizeDeficiencies();
+    this.populatePrintSheet();
+  },
+
+  autoResizeDeficiencies() {
+    const el = document.getElementById('corrective-deficiencies');
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+  },
+
+  populatePrintSheet() {
+    const printSheet = document.getElementById('print-sheet');
+    if (!printSheet) return;
+
+    // Thông tin chung
+    const deptSelect = document.getElementById('inspect-dept-select');
+    const deptName = (deptSelect && deptSelect.selectedIndex > 0)
+      ? deptSelect.options[deptSelect.selectedIndex].text.replace(/^\d+[\.\s]*/, '').trim()
+      : 'Khoa được giám sát';
+    const inspectTime = document.getElementById('inspect-time')?.value || '';
+    const headNurse = document.getElementById('inspect-head-nurse')?.value || '';
+
+    // Thành viên giám sát (mỗi người 1 dòng)
+    const rawInspectors = document.getElementById('inspect-inspectors')?.value || '';
+    const inspectorLines = rawInspectors
+      .split(/[\n,;]+/)
+      .map(l => l.replace(/^\d+[\.\s\-\)]*/, '').trim())
+      .filter(Boolean);
+    const inspectorsHtml = inspectorLines.length > 0
+      ? inspectorLines.map(name => `<div>${name}</div>`).join('')
+      : '<div>Đoàn Giám sát</div>';
+
+    // Tính toán điểm số
+    const calc = this.lastCalculatedScores || {
+      achieved: 100,
+      max: 100,
+      rate: 100,
+      rating: 'Đạt'
+    };
+    const achievedStr = formatScore(calc.achieved);
+    const maxStr = formatScore(calc.max);
+    const rateStr = calc.rate.toFixed(1).replace('.', ',');
+    const ratingText = document.getElementById('desktop-rating-text')?.textContent || calc.rating || 'Đạt';
+
+    // 63 dòng tiêu chuẩn con theo 5 chặng
+    let tableRowsHtml = '';
+    this.stagesMeta.forEach((stg) => {
+      // Hàng tiêu đề chặng I - V
+      tableRowsHtml += `
+        <tr class="print-stage-header-row">
+          <td colspan="6" class="print-stage-title-cell">
+            ${stg.name.toUpperCase()}. ${stg.title.toUpperCase()} (${formatScore(stg.points)} ĐIỂM)
+          </td>
+        </tr>
+      `;
+
+      const stgCriteria = this.criteria.filter(c => c.chang === stg.name);
+      stgCriteria.forEach((crit, idx) => {
+        const state = this.scoresState[crit.id] || { status: 'ACHIEVED', defect_note: '' };
+        const itemNumber = `${crit.muc_stt}.${idx + 1}`;
+
+        let actualScoreStr = '';
+        let noteStr = state.defect_note || '';
+
+        if (state.status === 'ACHIEVED') {
+          actualScoreStr = formatScore(crit.diem);
+        } else if (state.status === 'FAILED') {
+          actualScoreStr = '0,00';
+        } else if (state.status === 'NA') {
+          actualScoreStr = 'KAP';
+          if (!noteStr) noteStr = 'Không áp dụng';
+        }
+
+        tableRowsHtml += `
+          <tr class="print-data-row">
+            <td class="print-cell-center">${itemNumber}</td>
+            <td class="print-cell-left print-cell-bold">${crit.muc_ten}</td>
+            <td class="print-cell-left">${crit.noi_dung}</td>
+            <td class="print-cell-center">${formatScore(crit.diem)}</td>
+            <td class="print-cell-center print-cell-bold">${actualScoreStr}</td>
+            <td class="print-cell-left">${noteStr}</td>
+          </tr>
+        `;
+      });
+    });
+
+    // Dòng tổng
+    const totalRowHtml = `
+      <tr class="print-total-row">
+        <td colspan="3" class="print-cell-right print-cell-bold">
+          Tổng điểm đạt: ${achievedStr} / ${maxStr} điểm
+        </td>
+        <td colspan="3" class="print-cell-left print-cell-bold" style="white-space: nowrap;">
+          Tỷ lệ: ${rateStr}% — Xếp loại: ${ratingText}
+        </td>
+      </tr>
+    `;
+
+    // Tồn tại / Sai sót (in ĐỦ toàn bộ dòng, văn bản thường, không textarea)
+    const deficienciesText = document.getElementById('corrective-deficiencies')?.value || '';
+    const defLines = deficienciesText.split('\n').filter(l => l.trim().length > 0);
+    const defHtml = defLines.length > 0
+      ? defLines.map(line => `<div class="print-plan-line">${line}</div>`).join('')
+      : '<div class="print-plan-line">- Không có tồn tại, sai sót quy trình nào ghi nhận.</div>';
+
+    // Kế hoạch khắc phục
+    const measuresText = document.getElementById('corrective-measures')?.value || 'Tiếp tục duy trì và phát huy quy trình chuyên môn.';
+    const deadlineText = document.getElementById('corrective-deadline')?.value || 'Ngày 30.10.2026';
+
+    // Khối chữ ký 3 cột
+    const inspectorSignaturesHtml = inspectorLines.length > 0
+      ? inspectorLines.map(name => `<div>${name}</div>`).join('')
+      : '<div>(Ký và ghi rõ họ tên)</div>';
+
+    printSheet.innerHTML = `
+      <!-- a) Đầu phiếu -->
+      <div class="print-header-grid">
+        <div class="print-header-left">
+          <div class="print-subhead-bold">BỆNH VIỆN BÌNH DÂN</div>
+          <div class="print-subhead-bold">PHÒNG ĐIỀU DƯỠNG</div>
+        </div>
+        <div class="print-header-right">
+          <div><strong>Mã biểu mẫu:</strong> BK-GS-ĐD.01</div>
+          <div>Ban hành: 2026 | Lần BH: 02</div>
+        </div>
+      </div>
+
+      <div class="print-title-block">
+        <h2 class="print-doc-title">BẢNG KIỂM GIÁM SÁT CHUYÊN MÔN ĐIỀU DƯỠNG</h2>
+        <div class="print-doc-subtitle">(Áp dụng kiểm tra giám sát, định kỳ và đột xuất)</div>
+        <div class="print-doc-formula">* Công thức tính tỷ lệ tuân thủ (%): Tỷ lệ (%) = [ Tổng điểm Đạt / (100 - Tổng điểm các mục không áp dụng) ] x 100%</div>
+      </div>
+
+      <div class="print-meta-box">
+        <table class="print-meta-table">
+          <tr>
+            <td style="width: 50%;"><strong>Khoa được giám sát:</strong> ${deptName}</td>
+            <td style="width: 50%;"><strong>Thời gian:</strong> ${inspectTime}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"><strong>ĐD Trưởng khoa:</strong> ${headNurse}</td>
+            <td style="vertical-align: top;">
+              <strong>Thành viên giám sát:</strong>
+              <div class="print-inspectors-col">${inspectorsHtml}</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- b) Bảng 63 dòng tiêu chuẩn con -->
+      <table class="print-criteria-table">
+        <thead>
+          <tr>
+            <th style="width: 5%;">STT</th>
+            <th style="width: 25%;">Nội dung & tiêu chí</th>
+            <th style="width: 38%;">Tiêu chuẩn đánh giá</th>
+            <th style="width: 9%; white-space: nowrap;">Điểm chuẩn</th>
+            <th style="width: 10%; white-space: nowrap;">Điểm thực tế</th>
+            <th style="width: 13%;">Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+          ${totalRowHtml}
+        </tbody>
+      </table>
+
+      <!-- d) Bảng Tồn tại / Kế hoạch khắc phục -->
+      <table class="print-plan-table">
+        <thead>
+          <tr>
+            <th style="width: 50%;">1. TỒN TẠI / SAI SÓT GHI NHẬN TẠI KHOA</th>
+            <th style="width: 50%;">2. KẾ HOẠCH HÀNH ĐỘNG / KHẮC PHỤC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="print-plan-cell">
+              ${defHtml}
+            </td>
+            <td class="print-plan-cell">
+              <div class="print-plan-line"><strong>- Biện pháp:</strong> ${measuresText}</div>
+              <div class="print-plan-line" style="margin-top: 6px;"><strong>- Thời hạn hoàn thành:</strong> ${deadlineText}</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- e) Khối chữ ký 3 cột -->
+      <div class="print-signatures-block">
+        <table class="print-signatures-table">
+          <thead>
+            <tr>
+              <th style="width: 33.33%;">
+                THÀNH VIÊN GIÁM SÁT<br>
+                <span class="print-sig-sub">(Ký và ghi rõ họ tên)</span>
+              </th>
+              <th style="width: 33.33%;">
+                ĐIỀU DƯỠNG TRƯỞNG KHOA<br>
+                <span class="print-sig-sub">(Ký và ghi rõ họ tên)</span>
+              </th>
+              <th style="width: 33.34%;">
+                TRƯỞNG PHÒNG ĐIỀU DƯỠNG<br>
+                <span class="print-sig-sub">(Duyệt và ký tên)</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="print-sig-cell">
+                <div class="print-sig-space"></div>
+                <div class="print-sig-names">${inspectorSignaturesHtml}</div>
+              </td>
+              <td class="print-sig-cell">
+                <div class="print-sig-space"></div>
+                <div class="print-sig-names"><strong>${headNurse}</strong></div>
+              </td>
+              <td class="print-sig-cell">
+                <div class="print-sig-space"></div>
+                <div class="print-sig-names"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
   toggleBottomSheet(open) {
@@ -1006,10 +1293,12 @@ const InspectionForm = {
       corrective_plan: {
         deficiencies_summary: document.getElementById('corrective-deficiencies').value,
         action_measures: document.getElementById('corrective-measures').value,
-        person_in_charge: document.getElementById('corrective-person').value,
+        person_in_charge: headNurse || (document.getElementById('corrective-person') ? document.getElementById('corrective-person').value : '') || 'ĐD Trưởng khoa',
         deadline: document.getElementById('corrective-deadline').value
       }
     };
+
+    this.populatePrintSheet();
 
     const isStaticHost = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
     if (!isStaticHost) {
@@ -1131,6 +1420,7 @@ const InspectionForm = {
       App.showToast('Vui lòng lưu đợt kiểm tra trước khi xuất tệp', 'error');
       return;
     }
+    this.populatePrintSheet();
     window.print();
   },
 
@@ -1206,13 +1496,19 @@ const InspectionForm = {
 
       // Kế hoạch khắc phục
       if (data.corrective_plan) {
-        document.getElementById('corrective-deficiencies').value = data.corrective_plan.deficiencies_summary || '';
+        const defEl = document.getElementById('corrective-deficiencies');
+        if (defEl) {
+          defEl.value = data.corrective_plan.deficiencies_summary || '';
+          this.autoResizeDeficiencies();
+        }
         document.getElementById('corrective-measures').value = data.corrective_plan.action_measures || '';
-        document.getElementById('corrective-person').value = data.corrective_plan.person_in_charge || '';
+        const cpEl = document.getElementById('corrective-person');
+        if (cpEl) cpEl.value = data.corrective_plan.person_in_charge || '';
         document.getElementById('corrective-deadline').value = data.corrective_plan.deadline || '';
       }
 
       this.recalculateScores();
+      this.populatePrintSheet();
       this.updateExportButtonsState(true);
       this.updateMetaSummaryBadge();
       App.showToast(`Đã nạp đợt kiểm tra #${data.id} (${data.dept_name})`, 'info');

@@ -222,11 +222,7 @@
                     </div>
                   </div>
 
-                  <textarea id="inspect-inspectors" class="form-textarea form-textarea-readonly" rows="2" 
-                            readonly
-                            onclick="InspectionForm.toggleInspectorsPicker(true)"
-                            placeholder="Nhấp vào đây để chọn thành viên đoàn giám sát từ danh sách (1-36)..."
-                            title="Nhấp để chọn thành viên từ danh sách"></textarea>
+                  <input type="hidden" id="inspect-inspectors" value="" />
                 </div>
               </div>
 
@@ -320,14 +316,8 @@
                 <div class="dlp-alert" id="dlp-alert-measures"></div>
               </div>
 
-              <div class="form-group form-col-6">
-                <label class="form-label" for="corrective-person">
-                  Người chịu trách nhiệm thực hiện
-                </label>
-                <input type="text" id="corrective-person" class="form-input" placeholder="ĐD Trưởng khoa & Tập thể điều dưỡng..." />
-              </div>
-
-              <div class="form-group form-col-6">
+              <input type="hidden" id="corrective-person" value="" />
+              <div class="form-group form-col-12">
                 <label class="form-label" for="corrective-deadline">
                   Thời hạn hoàn thành khắc phục (dd.mm.yyyy)
                 </label>
@@ -687,6 +677,9 @@
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- Print Sheet for High-Fidelity A4 PDF Export (BK-GS-ĐD.01) -->
+  <section id="print-sheet" aria-hidden="true" style="display:none;"></section>
 
   <!-- Scripts -->
   <script src="./static/js/data_seed.js"></script>

@@ -119,6 +119,10 @@ def export_inspection_docx(round_id: int, output_docx_path: Optional[str] = None
         size_pt=10, bold=False
     )
 
+    # Ghi tiêu đề hàng 2 Table 1: cells[4] = "Điểm thực tế", cells[5] = "Ghi chú"
+    fill_cell_text(t1.rows[2].cells[4], "Điểm thực tế", size_pt=9.5, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    fill_cell_text(t1.rows[2].cells[5], "Ghi chú", size_pt=9.5, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+
     # 2. Điền 63 dòng tiêu chuẩn con theo template_row
     for det in detail_rows:
         t_row_idx = det['template_row']
@@ -157,22 +161,24 @@ def export_inspection_docx(round_id: int, output_docx_path: Optional[str] = None
     fill_cell_text(t2.rows[2].cells[0], t2_left_text, size_pt=9.5)
 
     measures = plan_data.get('action_measures', 'Tiếp tục duy trì và phát huy.')
-    person = plan_data.get('person_in_charge', round_data['head_nurse'])
     deadline = plan_data.get('deadline', f"Ngày 30.10.{round_data['year']}")
     t2_right_text = (
         f"2. KẾ HOẠCH HÀNH ĐỘNG / KHẮC PHỤC:\n"
         f"- Biện pháp: {measures}\n"
-        f"- Người chịu trách nhiệm: {person}\n"
         f"- Thời hạn hoàn thành: {deadline}"
     )
     fill_cell_text(t2.rows[2].cells[1], t2_right_text, size_pt=9.5)
 
     # 5. Điền Table 3: Khối chữ ký
-    inspectors_lines = round_data['inspectors'].splitlines()
-    first_inspector = inspectors_lines[0] if inspectors_lines else "Thành viên giám sát"
-    fill_cell_text(t3.rows[1].cells[0], f"\n\n\n{first_inspector}", size_pt=10, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    inspectors_lines = [l.strip() for l in round_data['inspectors'].splitlines() if l.strip()]
+    if not inspectors_lines:
+        inspectors_lines = [l.strip() for l in round_data['inspectors'].split(',') if l.strip()]
+    if not inspectors_lines:
+        inspectors_lines = ["Thành viên giám sát"]
+    inspectors_str = "\n".join(inspectors_lines)
+    fill_cell_text(t3.rows[1].cells[0], f"\n\n\n{inspectors_str}", size_pt=10, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     fill_cell_text(t3.rows[1].cells[1], f"\n\n\n{round_data['head_nurse']}", size_pt=10, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
-    fill_cell_text(t3.rows[1].cells[2], f"\n\n\n(Duyệt)", size_pt=10, italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    fill_cell_text(t3.rows[1].cells[2], f"\n\n\n", size_pt=10, italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
 
     # Xác định đường dẫn file xuất
     DOCX_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
