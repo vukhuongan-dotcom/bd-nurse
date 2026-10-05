@@ -1,0 +1,211 @@
+/* ==================== BE VIETNAM PRO LOCAL FONT ==================== */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../vendor/fonts/BeVietnamPro-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../vendor/fonts/BeVietnamPro-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../vendor/fonts/BeVietnamPro-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../vendor/fonts/BeVietnamPro-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../vendor/fonts/BeVietnamPro-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../vendor/fonts/BeVietnamPro-Bold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/**
+ * Design Tokens for BD-NURSE (Indigo Theme 2026-10-03)
+ * Phê duyệt bởi BSCKII. Vũ Khương An
+ */
+
+:root {
+  /* Phông chữ & Thang chữ (12 / 14 / 16 / 20 / 24 / 32) */
+  --font-sans: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+
+  /* Bảng màu Indigo - Light Mode (BS. An duyệt) */
+  --ink: #122056;
+  --ink-2: #4B5578;
+  --accent: #5B65DC;
+  --accent-strong: #4A53C9;
+  --tint: #EEEFFD;
+  --bg: #FAFAFD;
+  --surface: #FFFFFF;
+  --line: #E3E5F5;
+
+  /* Biến tương thích ngữ nghĩa cho ứng dụng */
+  --bg-primary: var(--bg);
+  --bg-surface: var(--surface);
+  --bg-card: var(--surface);
+  --bg-muted: var(--tint);
+  --bg-accent: var(--tint);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-2);
+  --text-inverse: #FFFFFF;
+
+  --border-light: var(--line);
+  --border-strong: var(--line);
+
+  /* Thương hiệu & Nút bấm */
+  --brand-primary: var(--accent);
+  --brand-primary-hover: var(--accent-strong);
+  --brand-ink: var(--ink);
+  --brand-accent: var(--accent);
+  --brand-muted: var(--ink-2);
+  --brand-rule: var(--line);
+
+  /* 4 Bậc xếp loại chất lượng (chữ / nền) — chỉ dùng cho xếp loại, luôn kèm chữ + icon */
+  --rating-dat-color: #15803D;
+  --rating-dat-bg: #E8F6EC;
+  --rating-tot-color: #0F766E;
+  --rating-tot-bg: #E3F4F1;
+  --rating-cai-tien-color: #B45309;
+  --rating-cai-tien-bg: #FDF1E3;
+  --rating-khong-dat-color: #B91C1C;
+  --rating-khong-dat-bg: #FCE9E9;
+
+  /* Nút trạng thái chấm điểm */
+  --btn-achieved: #15803D;
+  --btn-achieved-bg: #E8F6EC;
+  --btn-failed: #B91C1C;
+  --btn-failed-bg: #FCE9E9;
+  --btn-na: #4B5578;
+  --btn-na-bg: #EEEFFD;
+
+  /* Cảnh báo / Nguy hiểm */
+  --status-danger: #B91C1C;
+  --status-danger-bg: #FCE9E9;
+  --status-danger-border: #F87171;
+  --status-warning: #B45309;
+  --status-warning-bg: #FDF1E3;
+  --status-warning-border: #FBBF24;
+  --status-success: #15803D;
+  --status-success-bg: #E8F6EC;
+  --status-success-border: #86EFAC;
+  --status-info: #5B65DC;
+  --status-info-bg: #EEEFFD;
+  --status-info-border: #8B93F0;
+
+  /* Kích thước công thái học Tablet/iPad/Mobile */
+  --touch-target-min: 44px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(18, 32, 86, 0.05);
+  --shadow-md: 0 4px 12px rgba(18, 32, 86, 0.08);
+  --shadow-lg: 0 10px 24px rgba(18, 32, 86, 0.12);
+  --shadow-sticky: 0 -4px 16px rgba(18, 32, 86, 0.08);
+}
+
+/* Bảng màu Indigo - Dark Mode cho trực đêm / phòng mổ */
+[data-theme="dark"] {
+  --ink: #E6E8FA;
+  --ink-2: #9AA3C7;
+  --accent: #8B93F0;
+  --accent-strong: #A9AFF5;
+  --tint: #1C2766;
+  --bg: #0B1440;
+  --surface: #131E52;
+  --line: #2A3570;
+
+  --bg-primary: var(--bg);
+  --bg-surface: var(--surface);
+  --bg-card: var(--surface);
+  --bg-muted: var(--tint);
+  --bg-accent: var(--tint);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-2);
+  --text-inverse: #FFFFFF;
+
+  --border-light: var(--line);
+  --border-strong: var(--line);
+
+  --brand-primary: var(--accent);
+  --brand-primary-hover: var(--accent-strong);
+  --brand-ink: var(--ink);
+  --brand-accent: var(--accent);
+  --brand-muted: var(--ink-2);
+  --brand-rule: var(--line);
+
+  /* Xếp loại Dark Mode */
+  --rating-dat-color: #4ADE80;
+  --rating-dat-bg: rgba(21, 128, 61, 0.25);
+  --rating-tot-color: #2DD4BF;
+  --rating-tot-bg: rgba(15, 118, 110, 0.25);
+  --rating-cai-tien-color: #FBBF24;
+  --rating-cai-tien-bg: rgba(180, 83, 9, 0.25);
+  --rating-khong-dat-color: #F87171;
+  --rating-khong-dat-bg: rgba(185, 28, 28, 0.25);
+
+  --btn-achieved: #4ADE80;
+  --btn-achieved-bg: rgba(21, 128, 61, 0.3);
+  --btn-failed: #F87171;
+  --btn-failed-bg: rgba(185, 28, 28, 0.3);
+  --btn-na: #9AA3C7;
+  --btn-na-bg: rgba(75, 85, 120, 0.3);
+
+  --status-danger: #F87171;
+  --status-danger-bg: rgba(185, 28, 28, 0.2);
+  --status-danger-border: #EF4444;
+  --status-warning: #FBBF24;
+  --status-warning-bg: rgba(180, 83, 9, 0.2);
+  --status-warning-border: #F59E0B;
+  --status-success: #4ADE80;
+  --status-success-bg: rgba(21, 128, 61, 0.2);
+  --status-success-border: #22C55E;
+  --status-info: #8B93F0;
+  --status-info-bg: rgba(91, 101, 220, 0.2);
+  --status-info-border: #6366F1;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
+  --shadow-sticky: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
