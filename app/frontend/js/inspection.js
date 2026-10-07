@@ -94,6 +94,7 @@ const INSPECTORS_LIST = [
 const InspectionForm = {
   departments: [],
   criteria: [],
+  itemNoMap: {},
   currentRoundId: null,
   scoresState: {}, // criterion_id -> { status: 'ACHIEVED'|'FAILED'|'NA', awarded_score: float, defect_note: '' }
   autoSaveTimer: null,
@@ -109,6 +110,7 @@ const InspectionForm = {
   init(departments, criteria) {
     this.departments = departments;
     this.criteria = criteria;
+    this.buildItemNoMap();
 
     this.renderDepartmentSelect();
     this.initInspectorsPicker();
@@ -119,15 +121,72 @@ const InspectionForm = {
     this.startAutoSave();
   },
 
+  buildItemNoMap() {
+    this.itemNoMap = {};
+    if (!this.criteria || !this.criteria.length) return;
+    const sorted = [...this.criteria].sort((a, b) => (a.thu_tu || 0) - (b.thu_tu || 0));
+    const counts = {};
+    sorted.forEach(c => {
+      const stt = c.muc_stt;
+      counts[stt] = (counts[stt] || 0) + 1;
+      this.itemNoMap[c.id] = `${stt}.${counts[stt]}`;
+    });
+  },
+
+  itemNo(crit) {
+    if (!crit) return '';
+    const id = (typeof crit === 'object') ? (crit.id ?? crit.criterion_id) : crit;
+    if (this.itemNoMap && id != null && this.itemNoMap[id]) {
+      return this.itemNoMap[id];
+    }
+    if (typeof crit === 'object' && crit.thu_tu != null && this.criteria && this.criteria.length) {
+      const found = this.criteria.find(c => c.thu_tu === crit.thu_tu);
+      if (found && this.itemNoMap && this.itemNoMap[found.id]) {
+        return this.itemNoMap[found.id];
+      }
+    }
+    if (typeof crit === 'object' && typeof App !== 'undefined' && App.criteria && App.criteria.length) {
+      if (crit.thu_tu != null) {
+        const matchingGroup = App.criteria
+          .filter(c => c.muc_stt === crit.muc_stt)
+          .sort((a, b) => (a.thu_tu || 0) - (b.thu_tu || 0));
+        const idx = matchingGroup.findIndex(c => c.thu_tu === crit.thu_tu);
+        if (idx !== -1) {
+          return `${crit.muc_stt}.${idx + 1}`;
+        }
+      }
+    }
+    if (typeof crit === 'object' && crit.muc_stt != null) {
+      return `${crit.muc_stt}`;
+    }
+    return '';
+  },
+
   renderDepartmentSelect() {
     const select = document.getElementById('inspect-dept-select');
     if (!select) return;
     select.innerHTML = '<option value="">-- Chọn khoa cần giám sát (27 khoa) --</option>';
+
+    // Gom bằng <optgroup label="${block}"> theo khối (giữ thứ tự hiện tại trong từng khối)
+    const blocksMap = new Map();
     this.departments.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = `${d.name} (${d.block})`;
-      select.appendChild(opt);
+      const blockName = d.block || 'Khác';
+      if (!blocksMap.has(blockName)) {
+        blocksMap.set(blockName, []);
+      }
+      blocksMap.get(blockName).push(d);
+    });
+
+    blocksMap.forEach((depts, blockName) => {
+      const group = document.createElement('optgroup');
+      group.label = blockName;
+      depts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.name;
+        group.appendChild(opt);
+      });
+      select.appendChild(group);
     });
 
     select.addEventListener('change', (e) => {
@@ -185,7 +244,8 @@ const InspectionForm = {
     if (!badge) return;
 
     if (deptSelect && deptSelect.value) {
-      const selectedText = deptSelect.options[deptSelect.selectedIndex].text.split('(')[0].trim();
+      const dept = this.departments.find(d => d.id === Number(deptSelect.value));
+      const selectedText = dept ? dept.name : 'Khoa được giám sát';
       let timeText = '';
       if (dtInput && dtInput.value) {
         const d = new Date(dtInput.value);
@@ -410,9 +470,9 @@ const InspectionForm = {
           </div>
         `;
 
-        grp.items.forEach((crit, itemIdx) => {
-          // Hiển thị chuẩn theo mục: ${muc_stt}.${chỉ số trong mục} (1.1, 1.2, 1.3...)
-          const itemNumber = `${grp.muc_stt}.${itemIdx + 1}`;
+        grp.items.forEach((crit) => {
+          // Hiển thị chuẩn theo một nguồn duy nhất: this.itemNo(crit)
+          const itemNumber = this.itemNo(crit);
 
           stagesHtml += `
             <div class="criterion-row" id="crit-row-${crit.id}" data-id="${crit.id}" data-score="${crit.diem}">
@@ -594,6 +654,7 @@ const InspectionForm = {
     });
 
     this.recalculateScores();
+    this.updateDeficienciesList();
     this.updateExportButtonsState(false);
     this.updateMetaSummaryBadge();
   },
@@ -1067,7 +1128,7 @@ const InspectionForm = {
       return failedItems.map(item => `
         <a class="defect-item-link" onclick="InspectionForm.scrollToCriterion(${item.id}); return false;">
           <span>${Icons.x('icon-sm')}</span>
-          <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Mục ${item.muc_stt}: ${item.note}</span>
+          <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Mục ${this.itemNo(item.id)}: ${item.note}</span>
         </a>
       `).join('');
     };
@@ -1086,14 +1147,14 @@ const InspectionForm = {
       if (state && state.status === 'FAILED') {
         const note = state.defect_note ? `: ${state.defect_note}` : '';
         const actualFormatted = formatScore(state.awarded_score || 0);
-        failedItems.push(`- Mục ${c.muc_stt} (${c.muc_ten}) [${actualFormatted}/${formatScore(c.diem)}đ]${note}`);
+        failedItems.push(`- Mục ${this.itemNo(c)} (${c.muc_ten}) [${actualFormatted}/${formatScore(c.diem)}đ]${note}`);
       }
     });
 
     if (failedItems.length > 0) {
       listEl.value = failedItems.join('\n');
     } else {
-      listEl.value = '- Không có tồn tại ghi nhận (Đạt chuẩn toàn bộ).';
+      listEl.value = '- Không có tồn tại, sai sót quy trình nào ghi nhận (Đạt chuẩn toàn bộ).';
     }
     this.autoResizeDeficiencies();
     this.populatePrintSheet();
@@ -1103,7 +1164,8 @@ const InspectionForm = {
     const el = document.getElementById('corrective-deficiencies');
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = (el.scrollHeight + 2) + 'px';
+    el.style.height = (el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px';
+    el.scrollTop = 0;
   },
 
   populatePrintSheet() {
@@ -1112,9 +1174,10 @@ const InspectionForm = {
 
     // Thông tin chung
     const deptSelect = document.getElementById('inspect-dept-select');
-    const deptName = (deptSelect && deptSelect.selectedIndex > 0)
-      ? deptSelect.options[deptSelect.selectedIndex].text.replace(/^\d+[\.\s]*/, '').trim()
-      : 'Khoa được giám sát';
+    const selectedDept = (deptSelect && deptSelect.value)
+      ? this.departments.find(d => d.id === Number(deptSelect.value))
+      : null;
+    const deptName = selectedDept ? selectedDept.name : 'Khoa được giám sát';
     const inspectTime = document.getElementById('inspect-time')?.value || '';
     const headNurse = document.getElementById('inspect-head-nurse')?.value || '';
 
@@ -1153,9 +1216,9 @@ const InspectionForm = {
       `;
 
       const stgCriteria = this.criteria.filter(c => c.chang === stg.name);
-      stgCriteria.forEach((crit, idx) => {
+      stgCriteria.forEach((crit) => {
         const state = this.scoresState[crit.id] || { status: 'ACHIEVED', defect_note: '' };
-        const itemNumber = `${crit.muc_stt}.${idx + 1}`;
+        const itemNumber = this.itemNo(crit);
 
         let actualScoreStr = '';
         let noteStr = state.defect_note || '';
@@ -1188,7 +1251,7 @@ const InspectionForm = {
         <td colspan="3" class="print-cell-right print-cell-bold">
           Tổng điểm đạt: ${achievedStr} / ${maxStr} điểm
         </td>
-        <td colspan="3" class="print-cell-left print-cell-bold" style="white-space: nowrap;">
+        <td colspan="3" class="print-cell-left print-cell-bold">
           Tỷ lệ: ${rateStr}% — Xếp loại: ${ratingText}
         </td>
       </tr>
@@ -1247,14 +1310,22 @@ const InspectionForm = {
 
       <!-- b) Bảng 63 dòng tiêu chuẩn con -->
       <table class="print-criteria-table">
+        <colgroup>
+          <col style="width: 6%;">
+          <col style="width: 15%;">
+          <col style="width: 37%;">
+          <col style="width: 8%;">
+          <col style="width: 9%;">
+          <col style="width: 25%;">
+        </colgroup>
         <thead>
           <tr>
-            <th style="width: 5%;">STT</th>
-            <th style="width: 25%;">Nội dung & tiêu chí</th>
-            <th style="width: 38%;">Tiêu chuẩn đánh giá</th>
-            <th style="width: 9%; white-space: nowrap;">Điểm chuẩn</th>
-            <th style="width: 10%; white-space: nowrap;">Điểm thực tế</th>
-            <th style="width: 13%;">Ghi chú</th>
+            <th>STT</th>
+            <th>Nội dung & tiêu chí</th>
+            <th>Tiêu chuẩn đánh giá</th>
+            <th>Điểm chuẩn</th>
+            <th>Điểm thực tế</th>
+            <th>Ghi chú</th>
           </tr>
         </thead>
         <tbody>

@@ -301,11 +301,14 @@ const Dashboard = {
       const fullText = d.muc_ten || d.noi_dung || '';
       const rate = d.failed_rate != null ? d.failed_rate : (d.defect_rate || 0);
       const rateFormatted = rate.toFixed(1).replace('.', ',');
+      const itemNum = (typeof InspectionForm !== 'undefined' && typeof InspectionForm.itemNo === 'function')
+        ? InspectionForm.itemNo(d)
+        : (d.muc_stt ? `${d.muc_stt}` : '');
 
       html += `
         <div class="top-defect-item">
           <div class="defect-item-header">
-            <span class="defect-item-title">Mục ${d.muc_stt}: ${fullText}</span>
+            <span class="defect-item-title">Mục ${itemNum}: ${fullText}</span>
             <span class="defect-item-rate tabular-nums">${rateFormatted}%</span>
           </div>
           <div class="defect-bar-track">

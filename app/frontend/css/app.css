@@ -2568,6 +2568,7 @@ details[open] #icon-plan-chevron {
   resize: none;
   min-height: 52px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* ==================== HIGH-FIDELITY PRINT STYLES (BK-GS-ĐD.01) ==================== */
@@ -2636,17 +2637,26 @@ details[open] #icon-plan-chevron {
     color: #000000 !important;
   }
 
-  /* Bảng tiêu chuẩn con */
+  /* Bảng tiêu chuẩn con & Bảng kế hoạch */
+  .print-criteria-table,
+  .print-plan-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
   .print-criteria-table {
     margin-bottom: 12px !important;
     font-size: 10pt !important;
   }
 
   .print-criteria-table th,
-  .print-criteria-table td {
+  .print-criteria-table td,
+  .print-plan-table th,
+  .print-plan-table td {
     border: 1px solid #000000 !important;
     padding: 4px 6px !important;
     vertical-align: middle !important;
+    overflow-wrap: anywhere !important;
   }
 
   .print-criteria-table thead {
@@ -2749,6 +2759,7 @@ details[open] #icon-plan-chevron {
   .print-plan-table td {
     border: 1px solid #000000 !important;
     padding: 6px 8px !important;
+    overflow-wrap: anywhere !important;
   }
 
   .print-plan-table th {
